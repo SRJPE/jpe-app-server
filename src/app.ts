@@ -1,15 +1,20 @@
-const express = require('express')
-const dotenv = require('dotenv')
+import express, { RequestHandler } from 'express'
+import dotenv from 'dotenv'
+import cors from 'cors'
+import routes from './routes'
 
 dotenv.config()
 
 const app = express()
-const port = process.env.PORT
+const port = process.env.PORT || 8000
 
-app.get('/', (req, res) => {
-  res.send('Express + TypeScript Server')
-})
+app.use(cors())
+app.use(express.json() as RequestHandler)
+app.use('/', routes)
 
-app.listen(port, () => {
-  console.log(`[server]: Server is running at https://localhost:${port}`)
+app.listen(port, (err?: Error) => {
+  if (err) {
+    return console.error(err)
+  }
+  console.log(`[server]: Server is running at http://localhost:${port}`)
 })
