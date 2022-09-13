@@ -15,6 +15,8 @@ export default {
 ```
 
 
+
+
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your .env file
@@ -26,4 +28,10 @@ To run this project, you will need to add the following environment variables to
 `AZURE_PASSWORD`
 
 `AZURE_DB`
+
+
+## Insomnia Testing
+
+After spinning up the server, try sending a get request to `http://localhost:8000/azure-testing/agency`
+to recieve this data from our DB
 
