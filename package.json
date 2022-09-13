@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/express": "^4.17.13",
     "@types/node": "^18.7.16",
+    "@types/pg": "^8.6.5",
     "nodemon": "^2.0.19",
     "ts-node": "^10.9.1",
     "tslint": "^6.1.3",
