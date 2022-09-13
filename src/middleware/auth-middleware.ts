@@ -9,7 +9,7 @@ export async function isAuthenticated(
     return next()
   } catch (error) {
     console.log(error)
-    return res.status(401).send({ message: 'Token provided is not valid' })
+    return res.status(401).send({ message: 'Token provided is not authenticated' })
   }
 }
 
@@ -19,7 +19,7 @@ export function isAuthorized() {
       return next()
     } catch (error) {
       console.log(error)
-      return res.status(401).send({ message: 'Token provided is not valid' })
+      return res.status(401).send({ message: 'Token provided is not authorized' })
     }
   }
 }
