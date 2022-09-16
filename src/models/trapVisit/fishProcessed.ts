@@ -3,7 +3,7 @@ import { DropdownOption } from '../../interfaces'
 
 const { knex } = db
 
-// get trap functionalities
+// get fish processed options
 async function getFishProcessedOptions(): Promise<Array<DropdownOption>> {
   try {
     const fishProcessedOptions = await knex<DropdownOption>(

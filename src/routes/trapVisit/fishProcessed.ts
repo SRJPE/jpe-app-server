@@ -6,7 +6,7 @@ const fishProcessedRouter = Router()
 export default (trapVisitRouter: Router) => {
   trapVisitRouter.use('/fish-processed', fishProcessedRouter)
 
-  //GET TESTING
+  //GET
   fishProcessedRouter.get('/', async (req, res) => {
     try {
       const result = await getFishProcessedOptions()
