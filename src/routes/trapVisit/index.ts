@@ -3,6 +3,7 @@ import trapFunctionalityRouter from './trapFunctionality'
 import fishProcessedRouter from './fishProcessed'
 import lifeStageRouter from './lifeStage'
 import markTypeRouter from './markType'
+import markColorRouter from './markColor'
 import runRouter from './run'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 
@@ -26,5 +27,6 @@ export default (mainRouter: Router) => {
   fishProcessedRouter(trapVisitRouter)
   lifeStageRouter(trapVisitRouter)
   markTypeRouter(trapVisitRouter)
+  markColorRouter(trapVisitRouter)
   runRouter(trapVisitRouter)
 }
