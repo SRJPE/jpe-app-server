@@ -4,6 +4,7 @@ import { getLifeStages } from '../models/trapVisit/lifeStage'
 import { getMarkTypes } from '../models/trapVisit/markType'
 import { getRuns } from '../models/trapVisit/run'
 import { getMarkColors } from '../models/trapVisit/markColor'
+import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
@@ -14,6 +15,7 @@ const getAllTrapVisitDropdowns = async () => {
     getMarkTypes(),
     getMarkColors(),
     getRuns(),
+    getReleasePurposeOptions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -22,6 +24,7 @@ const getAllTrapVisitDropdowns = async () => {
     'markType',
     'markColor',
     'run',
+    'releasePurpose',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)

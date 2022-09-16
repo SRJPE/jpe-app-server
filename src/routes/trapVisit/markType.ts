@@ -4,7 +4,7 @@ import { getMarkTypes } from '../../models/trapVisit/markType'
 const markTypeRouter = Router()
 
 export default (trapVisitRouter: Router) => {
-  trapVisitRouter.use('/life-stage', markTypeRouter)
+  trapVisitRouter.use('/mark-type', markTypeRouter)
 
   //GET
   markTypeRouter.get('/', async (req, res) => {

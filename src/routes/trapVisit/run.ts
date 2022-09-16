@@ -4,7 +4,7 @@ import { getRuns } from '../../models/trapVisit/run'
 const runRouter = Router()
 
 export default (trapVisitRouter: Router) => {
-  trapVisitRouter.use('/life-stage', runRouter)
+  trapVisitRouter.use('/run', runRouter)
 
   //GET
   runRouter.get('/', async (req, res) => {

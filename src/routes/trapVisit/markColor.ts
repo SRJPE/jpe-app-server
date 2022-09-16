@@ -4,7 +4,7 @@ import { getMarkColors } from '../../models/trapVisit/markColor'
 const markColorRouter = Router()
 
 export default (trapVisitRouter: Router) => {
-  trapVisitRouter.use('/life-stage', markColorRouter)
+  trapVisitRouter.use('/mark-color', markColorRouter)
 
   //GET
   markColorRouter.get('/', async (req, res) => {

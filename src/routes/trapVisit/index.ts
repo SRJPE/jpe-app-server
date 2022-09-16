@@ -5,6 +5,7 @@ import lifeStageRouter from './lifeStage'
 import markTypeRouter from './markType'
 import markColorRouter from './markColor'
 import runRouter from './run'
+import releasePurposeRouter from './releasePurpose'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
@@ -29,4 +30,5 @@ export default (mainRouter: Router) => {
   markTypeRouter(trapVisitRouter)
   markColorRouter(trapVisitRouter)
   runRouter(trapVisitRouter)
+  releasePurposeRouter(trapVisitRouter)
 }
