@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getTrapFunctionalities } from '../../models/trapFunctionality'
+import { getTrapFunctionalities } from '../../models/trapVisit/trapFunctionality'
 
 const trapFunctionalityRouter = Router()
 

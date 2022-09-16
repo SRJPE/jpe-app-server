@@ -1,9 +1,11 @@
-import { getTrapFunctionalities } from '../models/trapFunctionality'
+import { getTrapFunctionalities } from '../models/trapVisit/trapFunctionality'
+import { getFishProcessedOptions } from '../models/trapVisit/fishProcessed'
+import fishProcessed from '../routes/trapVisit/fishProcessed'
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
-  const requestPromises = [getTrapFunctionalities()]
-  const keys = ['trapFunctionality']
+  const requestPromises = [getTrapFunctionalities(), getFishProcessedOptions()]
+  const keys = ['trapFunctionality', 'fishProcessed']
 
   const requestsResult = await Promise.allSettled(requestPromises)
 
