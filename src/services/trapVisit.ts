@@ -7,6 +7,7 @@ import { getMarkColors } from '../models/trapVisit/markColor'
 import { getConeDebrisVolumeOptions } from '../models/trapVisit/coneDebrisVolume'
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
+import { getLightConditions } from '../models/trapVisit/lightCondition'
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
@@ -20,6 +21,7 @@ const getAllTrapVisitDropdowns = async () => {
     getReleasePurposeOptions(),
     getConeDebrisVolumeOptions(),
     getVisitTypes(),
+    getLightConditions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -31,6 +33,7 @@ const getAllTrapVisitDropdowns = async () => {
     'releasePurpose',
     'coneDebrisVolume',
     'visitType',
+    'lightCondition',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)

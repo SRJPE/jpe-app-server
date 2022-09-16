@@ -8,6 +8,7 @@ import runRouter from './run'
 import releasePurposeRouter from './releasePurpose'
 import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
+import lightConditionRouter from './lightCondition'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
@@ -35,4 +36,5 @@ export default (mainRouter: Router) => {
   releasePurposeRouter(trapVisitRouter)
   coneDebrisVolumeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
+  lightConditionRouter(trapVisitRouter)
 }
