@@ -2,6 +2,7 @@ import { Router } from 'express'
 import trapFunctionalityRouter from './trapFunctionality'
 import fishProcessedRouter from './fishProcessed'
 import lifeStageRouter from './lifeStage'
+import markType from './markType'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
@@ -23,4 +24,5 @@ export default (mainRouter: Router) => {
   trapFunctionalityRouter(trapVisitRouter)
   fishProcessedRouter(trapVisitRouter)
   lifeStageRouter(trapVisitRouter)
+  markType(trapVisitRouter)
 }
