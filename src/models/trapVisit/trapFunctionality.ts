@@ -7,7 +7,7 @@ const { knex } = db
 async function getTrapFunctionalities(): Promise<Array<DropdownOption>> {
   try {
     const trapFunctionalities = await knex<DropdownOption>(
-      'trap_funcionality'
+      'trapFunctionality'
     ).select('*')
     return trapFunctionalities
   } catch (error) {

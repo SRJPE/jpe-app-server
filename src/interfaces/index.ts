@@ -31,3 +31,15 @@ export interface TrapVisit {
   qc_completed_at?: Date
   comments?: string
 }
+
+export interface Program {
+  id: number
+  program_name?: string
+  stream_name?: string
+  personnel_lead?: number
+  funding_agency?: number
+  efficiency_protocols_document_link?: string
+  trapping_protocols_document_link?: string
+  created_at?: Date
+  updated_at?: Date
+}

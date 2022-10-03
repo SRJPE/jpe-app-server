@@ -17,7 +17,7 @@ const trapVisitRouter = Router({ mergeParams: true })
 export default (mainRouter: Router) => {
   mainRouter.use('/trap-visit', trapVisitRouter)
 
-  // GET /charter/
+  // GET /trap-visit/dropdowns
   trapVisitRouter.get('/dropdowns', async (req, res) => {
     try {
       const trapVisitDropdowns = await getAllTrapVisitDropdowns()
