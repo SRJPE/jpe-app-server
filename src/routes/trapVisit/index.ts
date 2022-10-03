@@ -10,6 +10,7 @@ import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
 import lightConditionRouter from './lightCondition'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
+import { getTrapVisit, postTrapVisit } from '../../models/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -21,6 +22,17 @@ export default (mainRouter: Router) => {
     try {
       const trapVisitDropdowns = await getAllTrapVisitDropdowns()
       res.status(200).send(trapVisitDropdowns)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.post('/', async (req, res) => {
+    try {
+      const trapVisitValues = req.body
+      const createdTrapVisit = await postTrapVisit(trapVisitValues)
+      res.status(200).send(createdTrapVisit)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
