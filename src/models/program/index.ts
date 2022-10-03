@@ -5,13 +5,11 @@ const { knex } = db
 
 async function getPersonnelPrograms(personnelId: string): Promise<any> {
   try {
-    const program = await knex<any>('programPersonnelTeam')
-      .join('program', 'program.id', 'programPersonnelTeam.program')
-      .join('trapLocations', 'trapLocations.programId', 'program.id')
-      // .join('subsite', 'subsite.programId', 'program.id')
-      .where('programPersonnelTeam.id', personnelId)
+    const programs = await knex<any>('programPersonnelTeam')
+      .join('program', 'program.id', 'programPersonnelTeam.programId')
+      .where('programPersonnelTeam.personnelId', personnelId)
       .select('*')
-    return program
+    return programs
   } catch (error) {
     throw error
   }

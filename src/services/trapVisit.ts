@@ -8,6 +8,10 @@ import { getConeDebrisVolumeOptions } from '../models/trapVisit/coneDebrisVolume
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
 import { getLightConditions } from '../models/trapVisit/lightCondition'
+import { getPersonnelPrograms } from '../models/program'
+
+import db from '../db'
+const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
@@ -45,4 +49,69 @@ const getAllTrapVisitDropdowns = async () => {
   return dropdowns
 }
 
-export { getAllTrapVisitDropdowns }
+const getVisitSetupDefaultValues = async (personnelId: string) => {
+  try {
+    const programs = await getPersonnelPrograms(personnelId)
+    const programIds = programs.map(program => program.programId)
+
+    const trapLocations = await knex<any>('trapLocations')
+      .select('*')
+      .whereIn('programId', programIds)
+
+    const subSites = await knex<any>('subsite')
+      .select('*')
+      .whereIn(
+        'siteId',
+        trapLocations.map(trapLocation => trapLocation.id)
+      )
+
+    const crewMembers = await getDefaultCrewMembers(programIds)
+
+    return {
+      programs,
+      trapLocations,
+      subSites,
+      crewMembers,
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
+const getDefaultCrewMembers = async programIds => {
+  try {
+    const crew = await Promise.all(
+      programIds.map(async programId => {
+        let crew = []
+        const existingTrapVisits = await knex<any>('trapVisit')
+          .select('*')
+          .where('programId', programId)
+          .orderBy('trapVisitTimeStart', 'desc')
+
+        if (existingTrapVisits.length) {
+          crew = await knex<any>('trapVisitCrew')
+            .join('personnel', 'personnel.id', 'trapVisitCrew.personnelId')
+            .select('*')
+            .where('trapVisitId', existingTrapVisits[0].id)
+        } else {
+          crew = await knex<any>('programPersonnelTeam')
+            .select('*')
+            .join(
+              'personnel',
+              'personnel.id',
+              'programPersonnelTeam.personnelId'
+            )
+            .where('programId', programId)
+        }
+
+        return crew
+      })
+    )
+
+    return crew
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getAllTrapVisitDropdowns, getVisitSetupDefaultValues }

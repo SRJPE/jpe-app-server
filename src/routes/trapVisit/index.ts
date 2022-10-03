@@ -9,7 +9,10 @@ import releasePurposeRouter from './releasePurpose'
 import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
 import lightConditionRouter from './lightCondition'
-import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
+import {
+  getAllTrapVisitDropdowns,
+  getVisitSetupDefaultValues,
+} from '../../services/trapVisit'
 import { getTrapVisit, postTrapVisit } from '../../models/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
@@ -49,4 +52,17 @@ export default (mainRouter: Router) => {
   coneDebrisVolumeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
   lightConditionRouter(trapVisitRouter)
+
+  trapVisitRouter.get('/visit-setup/:personnelId', async (req, res) => {
+    try {
+      const { personnelId } = req.params
+      const trapSetupDefaultValues = await getVisitSetupDefaultValues(
+        personnelId
+      )
+      res.status(200).send(trapSetupDefaultValues)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
 }

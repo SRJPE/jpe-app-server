@@ -6,7 +6,7 @@ const programRouter = Router({ mergeParams: true })
 export default (mainRouter: Router) => {
   mainRouter.use('/program', programRouter)
 
-  // get all charters for a user
+  // get all programs for a certain personnel
   // GET /program/personnel/:id
   programRouter.get('/personnel/:id', async (req, res) => {
     try {
