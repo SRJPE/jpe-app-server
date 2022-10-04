@@ -13,7 +13,11 @@ import {
   getAllTrapVisitDropdowns,
   getVisitSetupDefaultValues,
 } from '../../services/trapVisit'
-import { getTrapVisit, postTrapVisit } from '../../models/trapVisit'
+import {
+  getTrapVisit,
+  postTrapVisit,
+  putTrapVisit,
+} from '../../models/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -42,16 +46,17 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapFunctionalityRouter(trapVisitRouter)
-  fishProcessedRouter(trapVisitRouter)
-  lifeStageRouter(trapVisitRouter)
-  markTypeRouter(trapVisitRouter)
-  markColorRouter(trapVisitRouter)
-  runRouter(trapVisitRouter)
-  releasePurposeRouter(trapVisitRouter)
-  coneDebrisVolumeRouter(trapVisitRouter)
-  visitTypeRouter(trapVisitRouter)
-  lightConditionRouter(trapVisitRouter)
+  trapVisitRouter.put('/:trapVisitId', async (req, res) => {
+    try {
+      const { trapVisitId } = req.params
+      const trapVisitValues = req.body
+      const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
+      res.status(200).send(editedTrapVisit)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
 
   trapVisitRouter.get('/visit-setup/:personnelId', async (req, res) => {
     try {
@@ -65,4 +70,15 @@ export default (mainRouter: Router) => {
       res.status(400).send(error)
     }
   })
+
+  trapFunctionalityRouter(trapVisitRouter)
+  fishProcessedRouter(trapVisitRouter)
+  lifeStageRouter(trapVisitRouter)
+  markTypeRouter(trapVisitRouter)
+  markColorRouter(trapVisitRouter)
+  runRouter(trapVisitRouter)
+  releasePurposeRouter(trapVisitRouter)
+  coneDebrisVolumeRouter(trapVisitRouter)
+  visitTypeRouter(trapVisitRouter)
+  lightConditionRouter(trapVisitRouter)
 }

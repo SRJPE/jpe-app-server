@@ -17,11 +17,22 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
 
 // post trapVisit - admin only route
 async function postTrapVisit(trapVisitValues): Promise<TrapVisit> {
-  const createdCharterResponse = await knex<TrapVisit>('trapVisit').insert(
+  const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
     trapVisitValues,
     ['id']
   )
-  return createdCharterResponse[0]
+  return createdTrapVisitResponse[0]
 }
 
-export { getTrapVisit, postTrapVisit }
+// PUT trapVisit - admin only route
+async function putTrapVisit(
+  trapVisitId: string,
+  trapVisitValues: Record<string, any>
+): Promise<TrapVisit> {
+  const editedTrapVisitResponse = await knex<TrapVisit>('trapVisit')
+    .where('id', trapVisitId)
+    .update(trapVisitValues, ['*'])
+  return editedTrapVisitResponse[0]
+}
+
+export { getTrapVisit, postTrapVisit, putTrapVisit }
