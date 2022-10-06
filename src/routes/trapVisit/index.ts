@@ -9,37 +9,31 @@ import releasePurposeRouter from './releasePurpose'
 import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
 import lightConditionRouter from './lightCondition'
-import {
-  getAllTrapVisitDropdowns,
-  getVisitSetupDefaultValues,
-} from '../../services/trapVisit'
-import {
-  getTrapVisit,
-  postTrapVisit,
-  putTrapVisit,
-} from '../../models/trapVisit'
+import visitSetupRouter from './visitSetup'
+import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
+import { postTrapVisit, putTrapVisit } from '../../models/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
 export default (mainRouter: Router) => {
   mainRouter.use('/trap-visit', trapVisitRouter)
 
-  // GET /trap-visit/dropdowns
-  trapVisitRouter.get('/dropdowns', async (req, res) => {
+  trapVisitRouter.post('/', async (req, res) => {
     try {
-      const trapVisitDropdowns = await getAllTrapVisitDropdowns()
-      res.status(200).send(trapVisitDropdowns)
+      const trapVisitValues = req.body
+      const createdTrapVisit = await postTrapVisit(trapVisitValues)
+      res.status(200).send(createdTrapVisit)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }
   })
 
-  trapVisitRouter.post('/', async (req, res) => {
+  // GET /trap-visit/dropdowns
+  trapVisitRouter.get('/dropdowns', async (req, res) => {
     try {
-      const trapVisitValues = req.body
-      const createdTrapVisit = await postTrapVisit(trapVisitValues)
-      res.status(200).send(createdTrapVisit)
+      const trapVisitDropdowns = await getAllTrapVisitDropdowns()
+      res.status(200).send(trapVisitDropdowns)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
@@ -58,19 +52,6 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapVisitRouter.get('/visit-setup/:personnelId', async (req, res) => {
-    try {
-      const { personnelId } = req.params
-      const trapSetupDefaultValues = await getVisitSetupDefaultValues(
-        personnelId
-      )
-      res.status(200).send(trapSetupDefaultValues)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
-
   trapFunctionalityRouter(trapVisitRouter)
   fishProcessedRouter(trapVisitRouter)
   lifeStageRouter(trapVisitRouter)
@@ -81,4 +62,5 @@ export default (mainRouter: Router) => {
   coneDebrisVolumeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
   lightConditionRouter(trapVisitRouter)
+  visitSetupRouter(trapVisitRouter)
 }
