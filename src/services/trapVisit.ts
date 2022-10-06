@@ -58,19 +58,11 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
       .select('*')
       .whereIn('programId', programIds)
 
-    const subSites = await knex<any>('subsite')
-      .select('*')
-      .whereIn(
-        'siteId',
-        trapLocations.map(trapLocation => trapLocation.id)
-      )
-
     const crewMembers = await getDefaultCrewMembers(programIds)
 
     return {
       programs,
       trapLocations,
-      subSites,
       crewMembers,
     }
   } catch (error) {

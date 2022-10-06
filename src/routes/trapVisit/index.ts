@@ -9,9 +9,13 @@ import releasePurposeRouter from './releasePurpose'
 import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
 import lightConditionRouter from './lightCondition'
-import visitSetupRouter from './visitSetup'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
-import { postTrapVisit, putTrapVisit } from '../../models/trapVisit'
+import {
+  getTrapVisit,
+  postTrapVisit,
+  putTrapVisit,
+} from '../../models/trapVisit'
+import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -40,12 +44,36 @@ export default (mainRouter: Router) => {
     }
   })
 
+  trapVisitRouter.get('/:trapVisitId', async (req, res) => {
+    try {
+      const { trapVisitId } = req.params
+      const trapVisit = await getTrapVisit(trapVisitId)
+      res.status(200).send(trapVisit)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
   trapVisitRouter.put('/:trapVisitId', async (req, res) => {
     try {
       const { trapVisitId } = req.params
       const trapVisitValues = req.body
       const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
       res.status(200).send(editedTrapVisit)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.get('/visit-setup/default/:personnelId', async (req, res) => {
+    try {
+      const { personnelId } = req.params
+      const trapSetupDefaultValues = await getVisitSetupDefaultValues(
+        personnelId
+      )
+      res.status(200).send(trapSetupDefaultValues)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
@@ -62,5 +90,4 @@ export default (mainRouter: Router) => {
   coneDebrisVolumeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
   lightConditionRouter(trapVisitRouter)
-  visitSetupRouter(trapVisitRouter)
 }

@@ -9,7 +9,6 @@ export interface DropdownOption {
 export interface TrapVisit {
   id: number
   projectId?: number
-  subsiteId?: number
   visitType?: number
   trapVisitTimeStart?: Date
   trapVisitTimeEnd?: Date
