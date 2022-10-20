@@ -56,6 +56,21 @@ async function putTrapVisit(
       delete trapVisitValues.crew
     }
 
+    if (trapVisitValues.hasOwnProperty('environmental')) {
+      /*
+        environmental: {
+          flowMeasure: {
+            value: 1,
+            unit: 'cfs'
+          },
+          waterTemperature: {
+            value: 1,
+            unit: 'F'
+          }
+        }
+       */
+    }
+
     await knex<TrapVisit>('trapVisit')
       .where('id', trapVisitId)
       .update(trapVisitValues, ['*'])

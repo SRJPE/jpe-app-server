@@ -3,11 +3,10 @@ import { getFishProcessedOptions } from '../models/trapVisit/fishProcessed'
 import { getLifeStages } from '../models/trapVisit/lifeStage'
 import { getMarkTypes } from '../models/trapVisit/markType'
 import { getRuns } from '../models/trapVisit/run'
+import { getUnits } from '../models/trapVisit/unit'
 import { getMarkColors } from '../models/trapVisit/markColor'
-import { getConeDebrisVolumeOptions } from '../models/trapVisit/coneDebrisVolume'
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
-import { getLightConditions } from '../models/trapVisit/lightCondition'
 import { getPersonnelPrograms } from '../models/program'
 
 import db from '../db'
@@ -22,10 +21,9 @@ const getAllTrapVisitDropdowns = async () => {
     getMarkTypes(),
     getMarkColors(),
     getRuns(),
+    getUnits(),
     getReleasePurposeOptions(),
-    getConeDebrisVolumeOptions(),
     getVisitTypes(),
-    getLightConditions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -34,10 +32,9 @@ const getAllTrapVisitDropdowns = async () => {
     'markType',
     'markColor',
     'run',
+    'unit',
     'releasePurpose',
-    'coneDebrisVolume',
     'visitType',
-    'lightCondition',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)

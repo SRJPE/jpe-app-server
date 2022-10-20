@@ -5,10 +5,9 @@ import lifeStageRouter from './lifeStage'
 import markTypeRouter from './markType'
 import markColorRouter from './markColor'
 import runRouter from './run'
+import unitRouter from './unit'
 import releasePurposeRouter from './releasePurpose'
-import coneDebrisVolumeRouter from './coneDebrisVolume'
 import visitTypeRouter from './visitType'
-import lightConditionRouter from './lightCondition'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 import {
   getTrapVisit,
@@ -87,7 +86,6 @@ export default (mainRouter: Router) => {
   markColorRouter(trapVisitRouter)
   runRouter(trapVisitRouter)
   releasePurposeRouter(trapVisitRouter)
-  coneDebrisVolumeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
-  lightConditionRouter(trapVisitRouter)
+  unitRouter(trapVisitRouter)
 }
