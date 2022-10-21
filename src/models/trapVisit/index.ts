@@ -1,5 +1,6 @@
 import db from '../../db'
 import { TrapVisit } from '../../interfaces'
+import { camelCase, keyBy } from 'lodash'
 
 const { knex } = db
 
@@ -14,7 +15,23 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
       .select('*')
       .where('trapVisitId', trapVisitId)
       .join('personnel', 'personnel.id', 'trapVisitCrew.personnelId')
-    return { ...trapVisit[0], crew }
+
+    const environmentalResponse = await knex<TrapVisit>(
+      'trapVisitEnvironmental'
+    )
+      .where('trapVisitId', trapVisitId)
+      .join('unit', 'unit.id', 'trapVisitEnvironmental.measureUnit')
+      .select(
+        'trapVisitEnvironmental.*',
+        'unit.definition as measureUnitDefinition'
+      )
+
+    const environmental = keyBy(environmentalResponse, obj => {
+      return camelCase(obj.measureName)
+    })
+
+    console.log('envionrment', environmental)
+    return { ...trapVisit[0], crew, environmental }
   } catch (error) {
     throw error
   }
@@ -57,18 +74,27 @@ async function putTrapVisit(
     }
 
     if (trapVisitValues.hasOwnProperty('environmental')) {
-      /*
-        environmental: {
-          flowMeasure: {
-            value: 1,
-            unit: 'cfs'
-          },
-          waterTemperature: {
-            value: 1,
-            unit: 'F'
+      const measureNames = Object.values(trapVisitValues.environmental).map(
+        (measure: any) => measure.measureName
+      )
+      // delete existing records for measures for trap visit
+      await knex<TrapVisit>('trapVisitEnvironmental')
+        .whereIn('measureName', measureNames)
+        .andWhere('trapVisitId', trapVisitId)
+        .del()
+
+      const rowsToInsert = Object.values(trapVisitValues.environmental).map(
+        (environmentalObject: any) => {
+          return {
+            ...environmentalObject,
+            trapVisitId,
           }
         }
-       */
+      )
+      await knex<TrapVisit>('trapVisitEnvironmental').insert(rowsToInsert, [
+        '*',
+      ])
+      delete trapVisitValues.environmental
     }
 
     await knex<TrapVisit>('trapVisit')
@@ -83,3 +109,23 @@ async function putTrapVisit(
 }
 
 export { getTrapVisit, postTrapVisit, putTrapVisit }
+
+/*
+  environmental: {
+    flowMeasure: {
+      measureName: 'Flow Measure' 
+      measureValue: 1000,
+      measureUnit: 5 // unit.id
+    },
+    waterTemperature: {
+      measureName: 'Water Temperature'
+      measureValue: 80,
+      measureUnit: 1 // unit.id
+    },
+    waterTurbidity: {
+      measureName: 'Water Turbidity'
+      measureValue: 100,
+      measureUnit: 25 // unit.id
+    }
+  }
+*/

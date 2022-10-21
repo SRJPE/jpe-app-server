@@ -29,6 +29,7 @@ export interface TrapVisit {
   qcCompletedAt?: Date
   comments?: string
   crew?: Array<any>
+  environmental?: Record<string, any>
 }
 
 export interface Program {
