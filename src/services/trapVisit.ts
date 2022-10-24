@@ -9,6 +9,7 @@ import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
 import { getLightConditions } from '../models/trapVisit/lightCondition'
 import { getPersonnelPrograms } from '../models/program'
+import { getBodyParts } from '../models/trapVisit/bodyPart'
 
 import db from '../db'
 const { knex } = db
@@ -21,6 +22,7 @@ const getAllTrapVisitDropdowns = async () => {
     getLifeStages(),
     getMarkTypes(),
     getMarkColors(),
+    getBodyParts(),
     getRuns(),
     getReleasePurposeOptions(),
     getConeDebrisVolumeOptions(),
@@ -33,6 +35,7 @@ const getAllTrapVisitDropdowns = async () => {
     'lifeStage',
     'markType',
     'markColor',
+    'bodyPart',
     'run',
     'releasePurpose',
     'coneDebrisVolume',
