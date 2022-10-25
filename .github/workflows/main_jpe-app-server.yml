@@ -52,5 +52,5 @@ jobs:
         with:
           app-name: 'jpe-app-server'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A8085D828B394F949131BF5CA84D166B }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_24FC22845BA04C96926CD7DD9DB0D0F6 }}
           package: .
