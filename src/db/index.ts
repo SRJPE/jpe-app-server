@@ -1,6 +1,8 @@
 import { Pool } from 'pg'
 import dotenv from 'dotenv'
 dotenv.config()
+import Knex from 'knex'
+import knexConfig from '../../knexfile.js'
 
 // Azure DB Connection Config
 const config = {
@@ -8,12 +10,15 @@ const config = {
   user: process.env.AZURE_USER,
   password: process.env.AZURE_PASSWORD,
   database: process.env.AZURE_DB,
-  port: 5432,
-  ssl: true,
+  port: parseInt(process.env.AZURE_PORT, 10) || 5432,
+  ssl: process.env.AZURE_SSL === 'TRUE',
 }
 
 const pool = new Pool(config)
 
+const knex = Knex(knexConfig)
+
 export default {
   query: (text: string, params: any[]) => pool.query(text, params),
+  knex,
 }
