@@ -35,6 +35,7 @@ export default (mainRouter: Router) => {
 
   catchRawRouter.post('/', async (req, res) => {
     try {
+      // const { trapVisitId } = req.params
       const catchRawValues = req.body
       const createdCatchRawRecord = await postCatchRaw(catchRawValues)
       res.status(200).send(createdCatchRawRecord)

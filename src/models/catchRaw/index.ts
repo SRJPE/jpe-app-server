@@ -30,41 +30,13 @@ async function getTrapVisitCatchRawRecords(
 
 // post trapVisit - admin only route
 // single object or array of objects
-
-/*
-[
-  {
-    trapVisit: 1,
-    lifestage: fry,
-    adClipped: false,
-    dead: false,
-    forkLength: 20
-  },
-  {
-    trapVisit: 1,
-    lifestage: fry,
-    adClipped: false,
-    dead: false,
-    forkLength: 24,
-  },
-  {
-    trapVisit: 1,
-    lifestage: fry,
-    adClipped: false,
-    dead: false,
-    forkLength: 22
-  },
-]
-
-
-*/
 async function postCatchRaw(catchRawValues): Promise<CatchRaw> {
   try {
-    const createdTrapVisitResponse = await knex<CatchRaw>('catchRaw').insert(
+    const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
       ['*']
     )
-    return createdTrapVisitResponse
+    return createdCatchRawResponse
   } catch (error) {
     throw error
   }
@@ -76,7 +48,10 @@ async function putCatchRaw(
   catchRawValues: Record<string, any>
 ): Promise<CatchRaw> {
   try {
-    return
+    const updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
+      .where('id', catchRawId)
+      .update(catchRawValues, ['*'])
+    return updatedCatchRawRecord[0]
   } catch (error) {
     throw error
   }
