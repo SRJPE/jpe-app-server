@@ -37,9 +37,11 @@ export interface Program {
   programName?: string
   streamName?: string
   personnelLead?: number
-  funding_agency?: number
+  fundingAgency?: number
   efficiencyProtocolsDocumentLink?: string
   trappingProtocolsDocumentLink?: string
   createdAt?: Date
   updatedAt?: Date
 }
+
+export interface CatchRaw {}
