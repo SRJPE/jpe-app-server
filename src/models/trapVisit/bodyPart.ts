@@ -3,7 +3,7 @@ import { DropdownOption } from '../../interfaces'
 
 const { knex } = db
 
-// get mark Colors options
+// get body parts options
 async function getBodyParts(): Promise<Array<DropdownOption>> {
   try {
     const bodyPart = await knex<DropdownOption>('bodyPart').select('*')

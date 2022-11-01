@@ -9,6 +9,7 @@ import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
 import { getPersonnelPrograms } from '../models/program'
 import { getBodyParts } from '../models/trapVisit/bodyPart'
+import { getPlusCountMethodology } from '../models/trapVisit/plusCountMethodology'
 
 import db from '../db'
 const { knex } = db
@@ -26,6 +27,7 @@ const getAllTrapVisitDropdowns = async () => {
     getUnits(),
     getReleasePurposeOptions(),
     getVisitTypes(),
+    getPlusCountMethodology(),
   ]
   const keys = [
     'trapFunctionality',
@@ -38,6 +40,7 @@ const getAllTrapVisitDropdowns = async () => {
     'unit',
     'releasePurpose',
     'visitType',
+    'plusCountMethodology',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)

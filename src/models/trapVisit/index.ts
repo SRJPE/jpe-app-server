@@ -30,7 +30,6 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
       return camelCase(obj.measureName)
     })
 
-    console.log('envionrment', environmental)
     return { ...trapVisit[0], crew, environmental }
   } catch (error) {
     throw error
@@ -42,7 +41,7 @@ async function postTrapVisit(trapVisitValues): Promise<TrapVisit> {
   try {
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
-      ['id']
+      ['*']
     )
     return createdTrapVisitResponse[0]
   } catch (error) {
@@ -109,23 +108,3 @@ async function putTrapVisit(
 }
 
 export { getTrapVisit, postTrapVisit, putTrapVisit }
-
-/*
-  environmental: {
-    flowMeasure: {
-      measureName: 'Flow Measure' 
-      measureValue: 1000,
-      measureUnit: 5 // unit.id
-    },
-    waterTemperature: {
-      measureName: 'Water Temperature'
-      measureValue: 80,
-      measureUnit: 1 // unit.id
-    },
-    waterTurbidity: {
-      measureName: 'Water Turbidity'
-      measureValue: 100,
-      measureUnit: 25 // unit.id
-    }
-  }
-*/

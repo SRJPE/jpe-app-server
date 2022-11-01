@@ -1,19 +1,17 @@
 import express from 'express'
 import { isAuthenticated } from '../middleware/auth-middleware'
-import testingRouter from './testing'
-import azureTestingRouter from './azureTesting'
 import trapVisitRouter from './trapVisit'
 import userRouter from './user'
 import programRouter from './program'
+import catchRawRouter from './catchRaw'
 
 const mainRouter = express.Router()
 
 mainRouter.use('/', isAuthenticated)
-testingRouter(mainRouter)
-azureTestingRouter(mainRouter)
 
 trapVisitRouter(mainRouter)
 userRouter(mainRouter)
 programRouter(mainRouter)
+catchRawRouter(mainRouter)
 
 export default mainRouter
