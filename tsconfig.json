@@ -9,5 +9,6 @@
     "rootDir": "src",
     "resolveJsonModule": true,
     "lib": ["es2020", "ES2020.Promise", "dom"]
-  }
+  },
+  "exclude": ["node_modules"]
 }
