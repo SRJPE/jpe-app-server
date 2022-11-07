@@ -12,13 +12,19 @@ import { getBodyParts } from '../models/trapVisit/bodyPart'
 import { getPlusCountMethodology } from '../models/trapVisit/plusCountMethodology'
 
 import db from '../db'
+import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotProcessed'
+import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
+import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
   const requestPromises = [
     getTrapFunctionalities(),
+    getWhyTrapNotFunctioning(),
+    getTrapStatusAtEnd(),
     getFishProcessedOptions(),
+    getWhyFishNotProcessedOptions(),
     getLifeStages(),
     getMarkTypes(),
     getMarkColors(),
@@ -31,7 +37,10 @@ const getAllTrapVisitDropdowns = async () => {
   ]
   const keys = [
     'trapFunctionality',
+    'whyTrapNotFunctioning',
+    'trapStatusAtEnd',
     'fishProcessed',
+    'whyFishNotProcessed',
     'lifeStage',
     'markType',
     'markColor',
