@@ -37,13 +37,13 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
 }
 
 // post trapVisit - admin only route
-async function postTrapVisit(trapVisitValues): Promise<TrapVisit> {
+async function postTrapVisit(trapVisitValues): Promise<Array<TrapVisit>> {
   try {
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
       ['*']
     )
-    return createdTrapVisitResponse[0]
+    return createdTrapVisitResponse
   } catch (error) {
     throw error
   }
