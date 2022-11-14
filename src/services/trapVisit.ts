@@ -15,6 +15,7 @@ import db from '../db'
 import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotProcessed'
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
+import { getTaxon } from '../models/trapVisit/taxon'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -23,6 +24,7 @@ const getAllTrapVisitDropdowns = async () => {
     getTrapFunctionalities(),
     getWhyTrapNotFunctioning(),
     getTrapStatusAtEnd(),
+    getTaxon(),
     getFishProcessedOptions(),
     getWhyFishNotProcessedOptions(),
     getLifeStages(),
@@ -39,6 +41,7 @@ const getAllTrapVisitDropdowns = async () => {
     'trapFunctionality',
     'whyTrapNotFunctioning',
     'trapStatusAtEnd',
+    'taxon',
     'fishProcessed',
     'whyFishNotProcessed',
     'lifeStage',
