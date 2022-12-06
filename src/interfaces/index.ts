@@ -32,6 +32,12 @@ export interface TrapVisit {
   environmental?: Record<string, any>
 }
 
+export interface TrapVisitCrew {
+  id: number
+  personnelId: number
+  trapVisitId: number
+}
+
 export interface Program {
   id: number
   programName?: string
