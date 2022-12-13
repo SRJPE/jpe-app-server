@@ -67,7 +67,7 @@ const getAllTrapVisitDropdowns = async () => {
 const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
     const programs = await getPersonnelPrograms(personnelId)
-    const programIds = programs.map(program => program.programId)
+    const programIds = programs.map((program) => program.programId)
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
@@ -85,31 +85,14 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
   }
 }
 
-const getDefaultCrewMembers = async programIds => {
+const getDefaultCrewMembers = async (programIds) => {
   try {
     const crew = await Promise.all(
-      programIds.map(async programId => {
-        let crew = []
-        const existingTrapVisits = await knex<any>('trapVisit')
+      programIds.map(async (programId) => {
+        let crew = await knex<any>('programPersonnelTeam')
           .select('*')
+          .join('personnel', 'personnel.id', 'programPersonnelTeam.personnelId')
           .where('programId', programId)
-          .orderBy('trapVisitTimeStart', 'desc')
-
-        if (existingTrapVisits.length) {
-          crew = await knex<any>('trapVisitCrew')
-            .join('personnel', 'personnel.id', 'trapVisitCrew.personnelId')
-            .select('*')
-            .where('trapVisitId', existingTrapVisits[0].id)
-        } else {
-          crew = await knex<any>('programPersonnelTeam')
-            .select('*')
-            .join(
-              'personnel',
-              'personnel.id',
-              'programPersonnelTeam.personnelId'
-            )
-            .where('programId', programId)
-        }
 
         return crew
       })
