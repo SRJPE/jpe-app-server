@@ -71,9 +71,7 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
     // const programs = await getPersonnelPrograms(personnelId)
     const programs = await getAllPrograms()
-    console.log('p', programs)
     const programIds = programs.map(program => program.programId).sort()
-    console.log('pid', programIds)
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
