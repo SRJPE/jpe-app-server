@@ -9,10 +9,22 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
       .join('program', 'program.id', 'programPersonnelTeam.programId')
       .where('programPersonnelTeam.personnelId', personnelId)
       .select('*')
+      .orderBy('program.id')
     return programs
   } catch (error) {
     throw error
   }
 }
 
-export { getPersonnelPrograms }
+async function getAllPrograms(): Promise<any> {
+  try {
+    const programs = await knex<any>('program')
+      .select('program.id as programId', 'program.*')
+      .orderBy('program.id')
+    return programs
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getPersonnelPrograms, getAllPrograms }

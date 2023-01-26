@@ -7,10 +7,9 @@ import { getUnits } from '../models/trapVisit/unit'
 import { getMarkColors } from '../models/trapVisit/markColor'
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
 import { getVisitTypes } from '../models/trapVisit/visitType'
-import { getPersonnelPrograms } from '../models/program'
+import { getPersonnelPrograms, getAllPrograms } from '../models/program'
 import { getBodyParts } from '../models/trapVisit/bodyPart'
 import { getPlusCountMethodology } from '../models/trapVisit/plusCountMethodology'
-
 import db from '../db'
 import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotProcessed'
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
@@ -64,10 +63,17 @@ const getAllTrapVisitDropdowns = async () => {
   return dropdowns
 }
 
+// NOTE: Production functionality should filter visit setup default values
+// by personnel Id of signed in user
+
+// for DEVELOPMENT, we will return all values
 const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
-    const programs = await getPersonnelPrograms(personnelId)
-    const programIds = programs.map((program) => program.programId)
+    // const programs = await getPersonnelPrograms(personnelId)
+    const programs = await getAllPrograms()
+    console.log('p', programs)
+    const programIds = programs.map(program => program.programId).sort()
+    console.log('pid', programIds)
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
@@ -85,10 +91,10 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
   }
 }
 
-const getDefaultCrewMembers = async (programIds) => {
+const getDefaultCrewMembers = async programIds => {
   try {
     const crew = await Promise.all(
-      programIds.map(async (programId) => {
+      programIds.map(async programId => {
         let crew = await knex<any>('programPersonnelTeam')
           .select('*')
           .join('personnel', 'personnel.id', 'programPersonnelTeam.personnelId')
