@@ -43,10 +43,8 @@ async function postTrapVisit(trapVisitValues): Promise<{
 }> {
   try {
     const allTrapVisitCrews = []
-    trapVisitValues.forEach((submission) => {
-      allTrapVisitCrews.push([...submission.crew])
-      delete submission.crew
-    })
+    allTrapVisitCrews.push([...trapVisitValues.crew])
+    delete trapVisitValues.crew
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
       ['*']
