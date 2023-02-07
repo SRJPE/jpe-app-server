@@ -51,3 +51,39 @@ export interface Program {
 }
 
 export interface CatchRaw {}
+
+export interface Release {
+  id: number
+  programId: number
+  releasePurposeId?: number
+  releaseSiteId?: number
+  releasedAt?: Date
+  markedAt?: Date
+  markColor?: number
+  markType?: number
+  markPosition?: number
+  runHatcheryFish?: number
+  hatcheryFishWeight?: number
+  totalWildFishReleased?: number
+  totalHatcheryFishReleased?: number
+  totalWildFishDead?: number
+  totalHatcheryFishDead?: number
+  crew?: Array<any>
+}
+
+export interface ReleaseCrew {
+  id: number
+  personnelId: number
+  trapVisitId: number
+}
+
+export interface ReleaseSite {
+  id: number
+  trapLocationsId: number
+  releaseSiteName: string
+  releaseSiteXCoord: number
+  releaseSiteYCoord: number
+  releaseSiteCoordinateSystem: string
+  releaseSiteDatum: string
+  releaseSiteProjection: string
+}
