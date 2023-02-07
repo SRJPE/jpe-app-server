@@ -28,7 +28,6 @@ async function postRelease(releaseValues): Promise<{
 }> {
   try {
     const allReleaseCrews = []
-    console.log('this!', releaseValues)
     allReleaseCrews.push([...releaseValues.crew])
     delete releaseValues.crew
     const createdReleaseResponse = await knex<Release>('release').insert(
