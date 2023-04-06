@@ -87,3 +87,13 @@ export interface ReleaseSite {
   releaseSiteDatum: string
   releaseSiteProjection: string
 }
+
+export interface TrapCoordinates {
+  id: number
+  trapVisitId: number
+  trapLocationsId: number
+  xCoord: number
+  yCoord: number
+  datum: string
+  projection: string
+}
