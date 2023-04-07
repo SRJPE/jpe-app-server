@@ -3,11 +3,11 @@ import { TrapCoordinates } from '../../interfaces'
 
 const { knex } = db
 
-async function postTrapCoordinates(catchRawValues): Promise<TrapCoordinates> {
+async function postTrapCoordinates(trapCoordinates): Promise<TrapCoordinates> {
   try {
     const createdTrapCoordinatesResponse = await knex<TrapCoordinates>(
       'trapCoordinates'
-    ).insert(catchRawValues, ['*'])
+    ).insert(trapCoordinates, ['*'])
 
     return createdTrapCoordinatesResponse[0]
   } catch (error) {

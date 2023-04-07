@@ -1,6 +1,8 @@
 import db from '../../db'
 import { TrapVisit, TrapVisitCrew } from '../../interfaces'
 import { camelCase, keyBy } from 'lodash'
+import { postTrapCoordinates } from './trapCoordinates'
+import { postTrapVisitEnvironmental } from './trapVisitEnvironmental'
 
 const { knex } = db
 
@@ -26,7 +28,7 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
         'unit.definition as measureUnitDefinition'
       )
 
-    const environmental = keyBy(environmentalResponse, (obj) => {
+    const environmental = keyBy(environmentalResponse, obj => {
       return camelCase(obj.measureName)
     })
 
@@ -37,48 +39,68 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
 }
 
 // post trapVisit - admin only route
+// trapVisitValues: Object representing 1 trap visit
 async function postTrapVisit(trapVisitValues): Promise<{
   createdTrapVisitResponse: Array<TrapVisit>
   createdTrapVisitCrewResponse: Array<TrapVisitCrew>
 }> {
   try {
-    const allTrapVisitCrews = []
-    allTrapVisitCrews.push([...trapVisitValues.crew])
+    const trapVisitCrew = trapVisitValues.crew
     delete trapVisitValues.crew
+
+    const trapCoordinates = trapVisitValues.trapCoordinates
+    delete trapVisitValues.trapCoordinates
+
+    const trapVisitEnvironmental = trapVisitValues.trapVisitEnvironmental
+    delete trapVisitValues.trapVisitEnvironmental
+
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
       ['*']
     )
 
-    const allTrapVisitCrewPromises = []
-    const createdTrapVisitCrewResponse = []
+    const createdTrapVisit = createdTrapVisitResponse?.[0]
 
-    createdTrapVisitResponse.forEach((trapVisit, idx) => {
-      const visitCrewPromises = []
-      allTrapVisitCrews[idx].forEach(async (personnelId) => {
-        const trapVisitCrewPayload = {
-          personnelId,
-          trapVisitId: trapVisit.id,
+    // insert trapCoordinates
+    const trapCoordinatesPayload = {
+      trapVisitId: createdTrapVisit.id,
+      trapLocationsId: trapVisitValues.trapLocationId,
+      ...trapCoordinates,
+    }
+    const createdTrapCoordinatesResponse = await postTrapCoordinates(
+      trapCoordinatesPayload
+    )
+    // insert trapVisitEnvironmental
+    const trapVisitEnvironmentalPayload = trapVisitEnvironmental.map(
+      measureObject => {
+        return {
+          trapVisitId: createdTrapVisit.id,
+          ...measureObject,
         }
-        visitCrewPromises.push(
-          knex<TrapVisitCrew>('trapVisitCrew').insert(trapVisitCrewPayload, [
-            '*',
-          ])
-        )
-      })
-      allTrapVisitCrewPromises.push(visitCrewPromises)
+      }
+    )
+    const createdTrapVisitEnvironmentalResponse =
+      await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
+
+    const visitCrewPromises = []
+    trapVisitCrew.forEach(async personnelId => {
+      const trapVisitCrewPayload = {
+        personnelId,
+        trapVisitId: createdTrapVisit.id,
+      }
+      visitCrewPromises.push(
+        knex<TrapVisitCrew>('trapVisitCrew').insert(trapVisitCrewPayload, ['*'])
+      )
     })
 
-    return Promise.all(
-      allTrapVisitCrewPromises.map((visitCrewPromises) =>
-        Promise.all(visitCrewPromises).then((response) => {
-          console.log('response: ', response)
-          const crewIds = response.map((response) => response[0].personnelId)
-          createdTrapVisitCrewResponse.push(crewIds)
-        })
-      )
-    ).then(() => {
-      return { createdTrapVisitResponse, createdTrapVisitCrewResponse }
+    return Promise.all(visitCrewPromises).then(response => {
+      const crewIds = response.map(response => response[0].personnelId)
+      return {
+        createdTrapVisitResponse: createdTrapVisit,
+        createdTrapVisitCrewResponse: crewIds,
+        createdTrapCoordinatesResponse,
+        createdTrapVisitEnvironmentalResponse,
+      }
     })
   } catch (error) {
     throw error
@@ -98,7 +120,7 @@ async function putTrapVisit(
         .del()
 
       // insert new crew
-      const rowsToInsert = trapVisitValues.crew.map((personnelId) => {
+      const rowsToInsert = trapVisitValues.crew.map(personnelId => {
         return {
           personnelId,
           trapVisitId,

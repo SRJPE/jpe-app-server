@@ -97,3 +97,12 @@ export interface TrapCoordinates {
   datum: string
   projection: string
 }
+
+export interface TrapVisitEnvironmental {
+  id: number
+  trapVisitId: number
+  measureName: string
+  measureValueNumeric: number
+  measureValueText: string
+  measureUnit: number
+}
