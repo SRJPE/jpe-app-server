@@ -28,7 +28,7 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
         'unit.definition as measureUnitDefinition'
       )
 
-    const environmental = keyBy(environmentalResponse, obj => {
+    const environmental = keyBy(environmentalResponse, (obj) => {
       return camelCase(obj.measureName)
     })
 
@@ -45,6 +45,12 @@ async function postTrapVisit(trapVisitValues): Promise<{
   createdTrapVisitCrewResponse: Array<TrapVisitCrew>
 }> {
   try {
+    trapVisitValues.trapVisitTimeStart = new Date(
+      trapVisitValues.trapVisitTimeStart
+    )
+    trapVisitValues.trapVisitTimeEnd = new Date(
+      trapVisitValues.trapVisitTimeEnd
+    )
     const trapVisitCrew = trapVisitValues.crew
     delete trapVisitValues.crew
 
@@ -72,7 +78,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
     )
     // insert trapVisitEnvironmental
     const trapVisitEnvironmentalPayload = trapVisitEnvironmental.map(
-      measureObject => {
+      (measureObject) => {
         return {
           trapVisitId: createdTrapVisit.id,
           ...measureObject,
@@ -83,7 +89,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
       await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
 
     const visitCrewPromises = []
-    trapVisitCrew.forEach(async personnelId => {
+    trapVisitCrew.forEach(async (personnelId) => {
       const trapVisitCrewPayload = {
         personnelId,
         trapVisitId: createdTrapVisit.id,
@@ -93,8 +99,8 @@ async function postTrapVisit(trapVisitValues): Promise<{
       )
     })
 
-    return Promise.all(visitCrewPromises).then(response => {
-      const crewIds = response.map(response => response[0].personnelId)
+    return Promise.all(visitCrewPromises).then((response) => {
+      const crewIds = response.map((response) => response[0].personnelId)
       return {
         createdTrapVisitResponse: createdTrapVisit,
         createdTrapVisitCrewResponse: crewIds,
@@ -120,7 +126,7 @@ async function putTrapVisit(
         .del()
 
       // insert new crew
-      const rowsToInsert = trapVisitValues.crew.map(personnelId => {
+      const rowsToInsert = trapVisitValues.crew.map((personnelId) => {
         return {
           personnelId,
           trapVisitId,
