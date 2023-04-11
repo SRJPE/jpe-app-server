@@ -3,7 +3,7 @@ export interface DropdownOption {
   definition: string
   description?: string
   createdAt: Date
-  updateddAt: Date
+  updatedAt: Date
 }
 
 export interface TrapVisit {
