@@ -3,7 +3,7 @@ export interface DropdownOption {
   definition: string
   description?: string
   createdAt: Date
-  updateddAt: Date
+  updatedAt: Date
 }
 
 export interface TrapVisit {
@@ -86,4 +86,23 @@ export interface ReleaseSite {
   releaseSiteCoordinateSystem: string
   releaseSiteDatum: string
   releaseSiteProjection: string
+}
+
+export interface TrapCoordinates {
+  id: number
+  trapVisitId: number
+  trapLocationsId: number
+  xCoord: number
+  yCoord: number
+  datum: string
+  projection: string
+}
+
+export interface TrapVisitEnvironmental {
+  id: number
+  trapVisitId: number
+  measureName: string
+  measureValueNumeric: number
+  measureValueText: string
+  measureUnit: number
 }

@@ -8,6 +8,7 @@ import runRouter from './run'
 import unitRouter from './unit'
 import releasePurposeRouter from './releasePurpose'
 import visitTypeRouter from './visitType'
+import trapCoordinatesRouter from './trapCoordinates'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 import {
   getTrapVisit,
@@ -88,4 +89,5 @@ export default (mainRouter: Router) => {
   releasePurposeRouter(trapVisitRouter)
   visitTypeRouter(trapVisitRouter)
   unitRouter(trapVisitRouter)
+  trapCoordinatesRouter(trapVisitRouter)
 }
