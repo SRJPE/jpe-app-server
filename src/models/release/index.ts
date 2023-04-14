@@ -66,40 +66,11 @@ async function postRelease(releaseValues): Promise<{
       releaseMarksPayload
     )
 
-    // const allReleaseCrewPromises = []
-    // const createdReleaseCrewResponse = []
-
-    // const createdReleaseMarks =
-
-    // createdReleaseResponse.forEach((release, idx) => {
-    //   const releaseCrewPromises = []
-    //   allReleaseCrews[idx].forEach(async (personnelId) => {
-    //     const releaseCrewPayload = {
-    //       personnelId,
-    //       releaseId: release.id,
-    //     }
-    //     releaseCrewPromises.push(
-    //       knex<ReleaseCrew>('releaseCrew').insert(releaseCrewPayload, ['*'])
-    //     )
-    //   })
-    //   allReleaseCrewPromises.push(releaseCrewPromises)
-    // })
-
-    // return Promise.all(
-    //   allReleaseCrewPromises.map((releaseCrewPromises) =>
-    //     Promise.all(releaseCrewPromises).then((response) => {
-    //       console.log('response: ', response)
-    //       const crewIds = response.map((response) => response[0].personnelId)
-    //       createdReleaseCrewResponse.push(crewIds)
-    //     })
-    //   )
-    // ).then(() => {
     return {
       createdReleaseResponse,
       createdReleaseCrewResponse,
       createdReleaseMarksResponse,
     }
-    // })
   } catch (error) {
     throw error
   }
