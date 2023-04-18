@@ -71,10 +71,17 @@ export interface Release {
   crew?: Array<any>
 }
 
+export interface ReleaseMarks {
+  id: number
+  releaseId: number
+  markType: number
+  markColor: number
+  bodyPart: number
+}
 export interface ReleaseCrew {
   id: number
+  releaseId: number
   personnelId: number
-  trapVisitId: number
 }
 
 export interface ReleaseSite {

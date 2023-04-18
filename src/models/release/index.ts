@@ -1,5 +1,7 @@
 import db from '../../db'
-import { Release, ReleaseCrew } from '../../interfaces'
+import { Release, ReleaseCrew, ReleaseMarks } from '../../interfaces'
+import { postReleaseMarks } from './releaseMarks'
+import { postReleaseCrew } from './releaseCrew'
 
 const { knex } = db
 
@@ -25,46 +27,50 @@ async function getRelease(releaseId: number | string): Promise<Release> {
 async function postRelease(releaseValues): Promise<{
   createdReleaseResponse: Array<Release>
   createdReleaseCrewResponse: Array<ReleaseCrew>
+  createdReleaseMarksResponse: Array<ReleaseMarks>
 }> {
   try {
-    const allReleaseCrews = []
-    allReleaseCrews.push([...releaseValues.crew])
-    delete releaseValues.crew
+    const releaseMarks = releaseValues.marksArray
+    delete releaseValues.marksArray
+    const releaseCrew = releaseValues.releaseCrew
+    delete releaseValues.releaseCrew
+
+    releaseValues.releasedAt = new Date(releaseValues.releasedAt)
+    releaseValues.markedAt = new Date(releaseValues.markedAt)
+
     const createdReleaseResponse = await knex<Release>('release').insert(
       releaseValues,
       ['*']
     )
 
-    const allReleaseCrewPromises = []
-    const createdReleaseCrewResponse = []
+    const createdRelease = createdReleaseResponse?.[0]
 
-    createdReleaseResponse.forEach((release, idx) => {
-      const releaseCrewPromises = []
-      allReleaseCrews[idx].forEach(async (personnelId) => {
-        const releaseCrewPayload = {
-          personnelId,
-          releaseId: release.id,
-        }
-        releaseCrewPromises.push(
-          knex<ReleaseCrew>('releaseCrew').insert(releaseCrewPayload, [
-            '*',
-          ])
-        )
-      })
-      allReleaseCrewPromises.push(releaseCrewPromises)
+    // insert releaseCrew
+    const releaseCrewPayload = releaseCrew.map((personnelId: number) => {
+      return {
+        releaseId: createdRelease.id,
+        personnelId,
+      }
     })
 
-    return Promise.all(
-      allReleaseCrewPromises.map((releaseCrewPromises) =>
-        Promise.all(releaseCrewPromises).then((response) => {
-          console.log('response: ', response)
-          const crewIds = response.map((response) => response[0].personnelId)
-          createdReleaseCrewResponse.push(crewIds)
-        })
-      )
-    ).then(() => {
-      return { createdReleaseResponse, createdReleaseCrewResponse }
+    const createdReleaseCrewResponse = await postReleaseCrew(releaseCrewPayload)
+
+    // insert releaseMarks
+    const releaseMarksPayload = releaseMarks.map((markObject) => {
+      return {
+        releaseId: createdRelease.id,
+        ...markObject,
+      }
     })
+    const createdReleaseMarksResponse = await postReleaseMarks(
+      releaseMarksPayload
+    )
+
+    return {
+      createdReleaseResponse,
+      createdReleaseCrewResponse,
+      createdReleaseMarksResponse,
+    }
   } catch (error) {
     throw error
   }
