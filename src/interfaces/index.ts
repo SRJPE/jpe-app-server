@@ -52,6 +52,21 @@ export interface Program {
 
 export interface CatchRaw {}
 
+export interface ExistingMarksI {
+  id: number
+  program_id: number
+  release_id: number
+  mark_applied_id: number
+  catch_raw_id: number
+  fish_id: string
+  mark_type_id: number
+  mark_position_id: number
+  mark_color_id: number
+  mark_code: string
+  created_at: Date
+  updated_at: Date
+}
+
 export interface Release {
   id: number
   programId: number
