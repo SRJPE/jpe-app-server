@@ -75,6 +75,11 @@ export interface GeneticSamplingDataI {
   fin_clip: boolean
   comments?: string
 }
+export interface GeneticSamplingCrewI {
+  id: number
+  personnelId: number
+  geneticSamplingDataId: number
+}
 
 export interface Release {
   id: number
