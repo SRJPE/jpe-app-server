@@ -66,6 +66,15 @@ export interface ExistingMarksI {
   created_at: Date
   updated_at: Date
 }
+export interface GeneticSamplingDataI {
+  id: number
+  catch_raw_id: number
+  sample_id: string
+  sample_bin?: string
+  mucus_swab: boolean
+  fin_clip: boolean
+  comments?: string
+}
 
 export interface Release {
   id: number

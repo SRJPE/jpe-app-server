@@ -2,6 +2,7 @@ import db from '../../db'
 import { CatchRaw } from '../../interfaces'
 import { camelCase, keyBy } from 'lodash'
 import { postExistingMarks } from './existingMarks'
+import { postGeneticSamplingData } from './geneticSamplingData'
 
 const { knex } = db
 
@@ -35,6 +36,9 @@ async function postCatchRaw(catchRawValues): Promise<CatchRaw> {
   try {
     const existingMarks = catchRawValues.existingMarks
     delete catchRawValues.existingMarks
+    const geneticSamplingData = catchRawValues.geneticSamplingData
+    delete catchRawValues.geneticSamplingData
+    console.log('🚀 ~ postCatchRaw ~ geneticSamplingData:', geneticSamplingData)
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
@@ -56,7 +60,26 @@ async function postCatchRaw(catchRawValues): Promise<CatchRaw> {
     const createdExistingMarksResponse = await postExistingMarks(
       existingMarksPayload
     )
-    return { createdCatchRawResponse, createdExistingMarksResponse }
+    let crewMemberCollectingSample: string //change to a forEach and set two variables.
+    const geneticSamplingDataPayload = geneticSamplingData.map(
+      (geneticSamplingObj: any) => {
+        delete geneticSamplingObj.crewMemberCollectingSample
+        return {
+          catchRawId: createdCatchRaw.id,
+          ...geneticSamplingObj,
+        }
+      }
+    )
+
+    const createdGeneticSamplingDataResponse = await postGeneticSamplingData(
+      geneticSamplingDataPayload
+    )
+
+    return {
+      createdCatchRawResponse,
+      createdExistingMarksResponse,
+      createdGeneticSamplingDataResponse,
+    }
   } catch (error) {
     throw error
   }
