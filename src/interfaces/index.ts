@@ -80,6 +80,18 @@ export interface GeneticSamplingCrewI {
   personnelId: number
   geneticSamplingDataId: number
 }
+export interface MarkAppliedI {
+  id: number
+  catch_raw_id: number
+  program_id: number
+  mark_type_id: number
+  mark_position_id: number
+  mark_color_id?: number
+  mark_code?: number
+  comments?: string
+  created_at: Date
+  updated_at: Date
+}
 
 export interface Release {
   id: number

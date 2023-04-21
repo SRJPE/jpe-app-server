@@ -7,6 +7,7 @@ import {
 import { camelCase, keyBy } from 'lodash'
 import { postExistingMarks } from './existingMarks'
 import { postGeneticSamplingData } from './geneticSamplingData'
+import { postMarkApplied } from './markApplied'
 
 const { knex } = db
 
@@ -46,7 +47,10 @@ async function postCatchRaw(catchRawValues): Promise<{
     delete catchRawValues.existingMarks
     const geneticSamplingData = catchRawValues.geneticSamplingData
     delete catchRawValues.geneticSamplingData
+    const appliedMarks = catchRawValues.appliedMarks
+    delete catchRawValues.appliedMarks
     console.log('🚀 ~ postCatchRaw ~ geneticSamplingData:', geneticSamplingData)
+    console.log('🚀 ~ postCatchRaw ~ appliedMarks:', appliedMarks)
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
@@ -55,6 +59,7 @@ async function postCatchRaw(catchRawValues): Promise<{
     const createdCatchRaw = createdCatchRawResponse?.[0]
 
     let createdExistingMarksResponse = []
+    let createdMarkAppliedResponse = []
 
     if (existingMarks.length > 0) {
       const existingMarksPayload = existingMarks.map((markObj: any) => {
@@ -72,13 +77,33 @@ async function postCatchRaw(catchRawValues): Promise<{
         existingMarksPayload
       )
     }
-    // let crewMemberCollectingSample: string //change to a forEach and set two variables.
+    if (appliedMarks.length > 0) {
+      const markAppliedPayload = appliedMarks.map((markObj: any) => {
+        delete markObj.crewMember
+        delete markObj.markNumber //ask Erin
+        delete markObj.UID
+        return {
+          catchRawId: createdCatchRaw.id,
+          programId: createdCatchRaw.programId,
+          createdAt: new Date(createdCatchRaw.createdAt),
+          updatedAt: new Date(createdCatchRaw.updatedAt),
+          ...markObj,
+        }
+      })
+
+      createdMarkAppliedResponse = await postMarkApplied(markAppliedPayload)
+      console.log(
+        '🚀 ~ postCatchRaw ~ createdMarkAppliedResponse:',
+        createdMarkAppliedResponse
+      )
+    }
+    // let crewMember: string //change to a forEach and set two variables.
     const geneticSamplingDataPayload = geneticSamplingData.map(
       (geneticSamplingObj: any) => {
-        // crewMemberCollectingSample =
-        //   geneticSamplingObj.crewMemberCollectingSample
-        //do something with crewMemberCollectingSample before deletion??
-        delete geneticSamplingObj.crewMemberCollectingSample
+        // crewMember =
+        //   geneticSamplingObj.crewMember
+        //do something with crewMember before deletion??
+        delete geneticSamplingObj.crewMember
         delete geneticSamplingObj.UID
 
         return {
@@ -86,10 +111,6 @@ async function postCatchRaw(catchRawValues): Promise<{
           ...geneticSamplingObj,
         }
       }
-    )
-    console.log(
-      '🚀 ~ postCatchRaw ~ geneticSamplingDataPayload:',
-      geneticSamplingDataPayload
     )
 
     const createdGeneticSamplingDataResponse = await postGeneticSamplingData(
@@ -105,7 +126,7 @@ async function postCatchRaw(catchRawValues): Promise<{
     //in each object I need to match the sampleID with the response sampleID
 
     return {
-      createdCatchRawResponse,
+      createdCatchRawResponse: createdCatchRaw,
       createdExistingMarksResponse,
       createdGeneticSamplingDataResponse,
     }
