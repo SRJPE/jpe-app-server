@@ -15,6 +15,7 @@ import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotPro
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 import { getTaxon } from '../models/trapVisit/taxon'
+import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -35,6 +36,7 @@ const getAllTrapVisitDropdowns = async () => {
     getReleasePurposeOptions(),
     getVisitTypes(),
     getPlusCountMethodology(),
+    getTwoMostRecentReleaseMarks(),
   ]
   const keys = [
     'trapFunctionality',
@@ -52,6 +54,7 @@ const getAllTrapVisitDropdowns = async () => {
     'releasePurpose',
     'visitType',
     'plusCountMethodology',
+    'twoMostRecentReleaseMarks',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
