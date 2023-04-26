@@ -92,6 +92,11 @@ export interface MarkAppliedI {
   created_at: Date
   updated_at: Date
 }
+export interface MarkAppliedCrewI {
+  id: number
+  personnel: number
+  markAppliedId: number
+}
 
 export interface Release {
   id: number
