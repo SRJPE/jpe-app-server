@@ -3,6 +3,7 @@ import { Program } from '../../interfaces'
 
 const { knex } = db
 
+// get programs associated with personnel
 async function getPersonnelPrograms(personnelId: string): Promise<any> {
   try {
     const programs = await knex<any>('programPersonnelTeam')
@@ -27,4 +28,27 @@ async function getAllPrograms(): Promise<any> {
   }
 }
 
-export { getPersonnelPrograms, getAllPrograms }
+async function postProgram(programValues): Promise<any> {
+  try {
+    const createdProgramResponse = await knex<any>('program').insert(
+      programValues,
+      ['*']
+    )
+    return createdProgramResponse
+  } catch (error) {
+    throw error
+  }
+}
+
+async function updateProgram({ id, updatedValues }): Promise<any> {
+  try {
+    const updatedProgramResponse = await knex<any>('program')
+      .where({ id })
+      .update(updatedValues, ['*'])
+    return updatedProgramResponse[0]
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getPersonnelPrograms, getAllPrograms, postProgram, updateProgram }

@@ -15,4 +15,19 @@ async function getAllReleaseSites(): Promise<ReleaseSite[]> {
   }
 }
 
-export { getAllReleaseSites }
+// post trap location
+async function postReleaseSite(
+  releaseSiteValues
+): Promise<ReleaseSite[]> {
+  try {
+    const createdReleaseSite = await knex<ReleaseSite>(
+      'releaseSite'
+    ).insert(releaseSiteValues, ['*'])
+
+    return createdReleaseSite
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getAllReleaseSites, postReleaseSite }
