@@ -52,15 +52,15 @@ export interface Program {
 
 export interface Personnel {
   id: number
-  first_name?: string
-  last_name?: string
+  firstName?: string
+  lastName?: string
   email?: string
   phone?: string
-  agency_id?: number
+  agencyId?: number
   role?: string
-  orcid_id?: string
-  created_at?: Date
-  updated_at?: Date
+  orcidId?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface ProgramPersonnelTeam {
@@ -178,18 +178,18 @@ export interface FishMeasureProtocol {
 
 export interface PermitInfo {
     id: number
-    permit_id: string
-    program_id: number
-    stream_name: string
-    permit_start_date: Date
-    permit_end_date: Date
-    flow_threshold: number
-    temperature_threshold: number
-    frequency_sampling_inclement_weather: number
-    species: string
-    listing_unit: number
-    fish_life_stage: string
-    allowed_expected_take: number
-    allowed_mortality_count: number
-    permit_file_link: string
+    permitId?: string
+    programId?: number
+    streamName?: string
+    permitStartDate?: Date
+    permitEndDate?: Date
+    flowThreshold?: number
+    temperatureThreshold?: number
+    frequencySamplingInclementWeather?: number
+    species?: string
+    listingUnit?: number
+    fishLifeStage?: string
+    allowedExpectedTake?: number
+    allowedMortalityCount?: number
+    permitFileLink?: string
 }
