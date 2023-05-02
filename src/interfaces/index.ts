@@ -54,25 +54,25 @@ export interface CatchRaw {}
 
 export interface ExistingMarksI {
   id: number
-  program_id: number
-  release_id: number
-  mark_applied_id: number
-  catch_raw_id: number
-  fish_id: string
-  mark_type_id: number
-  mark_position_id: number
-  mark_color_id: number
-  mark_code: string
-  created_at: Date
-  updated_at: Date
+  programId: number
+  releaseId: number
+  markAppliedId: number
+  catchRawId: number
+  fishId: string
+  markTypeId: number
+  markPositionId: number
+  markColorId: number
+  markCode: string
+  createdAt: Date
+  updatedAt: Date
 }
 export interface GeneticSamplingDataI {
   id: number
-  catch_raw_id: number
-  sample_id: string
-  sample_bin?: string
-  mucus_swab: boolean
-  fin_clip: boolean
+  catchRawId: number
+  sampleId: string
+  sampleBin?: string
+  mucusSwab: boolean
+  finClip: boolean
   comments?: string
 }
 export interface GeneticSamplingCrewI {
@@ -82,15 +82,15 @@ export interface GeneticSamplingCrewI {
 }
 export interface MarkAppliedI {
   id: number
-  catch_raw_id: number
-  program_id: number
-  mark_type_id: number
-  mark_position_id: number
-  mark_color_id?: number
-  mark_code?: number
+  catchRawId: number
+  programId: number
+  markTypeId: number
+  markPositionId: number
+  markColorId?: number
+  markCode?: number
   comments?: string
-  created_at: Date
-  updated_at: Date
+  createdAt: Date
+  updatedAt: Date
 }
 export interface MarkAppliedCrewI {
   id: number
