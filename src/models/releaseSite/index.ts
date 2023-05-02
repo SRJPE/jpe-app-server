@@ -15,7 +15,7 @@ async function getAllReleaseSites(): Promise<ReleaseSite[]> {
   }
 }
 
-// post trap location
+// post release site
 async function postReleaseSite(
   releaseSiteValues
 ): Promise<ReleaseSite[]> {
