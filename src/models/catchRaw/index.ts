@@ -115,7 +115,6 @@ async function postCatchRaw(catchRawValues): Promise<{
           const crewMember = appliedMarkSubmission.crewMember
           const appliedMarkSubmissionCopy = { ...appliedMarkSubmission }
           delete appliedMarkSubmissionCopy.crewMember
-          // delete appliedMarkSubmissionCopy.markNumber //ask Erin
           delete appliedMarkSubmissionCopy.UID
           const markAppliedPayload = {
             catchRawId: createdCatchRaw.id,
