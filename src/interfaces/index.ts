@@ -50,6 +50,25 @@ export interface Program {
   updatedAt?: Date
 }
 
+export interface Personnel {
+  id: number
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  agencyId?: number
+  role?: string
+  orcidId?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface ProgramPersonnelTeam {
+  id: number
+  personnelId: number
+  programId: number
+}
+
 export interface CatchRaw {}
 
 export interface ExistingMarksI {
@@ -141,6 +160,26 @@ export interface ReleaseSite {
   releaseSiteProjection: string
 }
 
+export interface TrapLocations {
+  id: number
+  trapName?: string
+  programId?: number
+  dataRecorderId?: number
+  dataRecorderAgencyId?: number
+  siteName?: string
+  coneSizeFt?: number
+  xCoord?: number
+  yCoord?: number
+  coordinateSystem?: any
+  projection?: string
+  datum?: string
+  gageNumber?: number
+  gageAgency?: number
+  comments?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 export interface TrapCoordinates {
   id: number
   trapVisitId: number
@@ -158,4 +197,45 @@ export interface TrapVisitEnvironmental {
   measureValueNumeric: number
   measureValueText: string
   measureUnit: number
+}
+
+export interface HatcheryInfo {
+    id: number
+    hatcheryName?: string
+    streamName?: string
+    agreementId?: string
+    programId?: number
+    aggrementStartDate?: Date
+    aggrementEndDate?: Date
+    renewalDate?: Date
+    frequencyOfFishCollection?: number
+    quantityOfFish?: number
+    hatcheryFileLink?: string
+}
+
+export interface FishMeasureProtocol {
+    id: number
+    programId?: number
+    species?: string
+    lifeStage?: number
+    run?: number
+    numberMeasured?: number
+}
+
+export interface PermitInfo {
+    id: number
+    permitId?: string
+    programId?: number
+    streamName?: string
+    permitStartDate?: Date
+    permitEndDate?: Date
+    flowThreshold?: number
+    temperatureThreshold?: number
+    frequencySamplingInclementWeather?: number
+    species?: string
+    listingUnit?: number
+    fishLifeStage?: string
+    allowedExpectedTake?: number
+    allowedMortalityCount?: number
+    permitFileLink?: string
 }

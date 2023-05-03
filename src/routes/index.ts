@@ -6,6 +6,13 @@ import programRouter from './program'
 import catchRawRouter from './catchRaw'
 import releaseRouter from './release'
 import releaseSiteRouter from './releaseSite'
+import personnelRouter from './personnel'
+import trapLocationsRouter from './trapLocations'
+import fishMeasureProtocolRouter from './fishMeasureProtocol'
+import hatcheryInfoRouter from './hatcheryInfo'
+import permitInfoRouter from './permitInfo'
+import programPersonnelTeamRouter from './programPersonnelTeam'
+
 
 const mainRouter = express.Router()
 
@@ -17,5 +24,12 @@ programRouter(mainRouter)
 catchRawRouter(mainRouter)
 releaseRouter(mainRouter)
 releaseSiteRouter(mainRouter)
+personnelRouter(mainRouter)
+trapLocationsRouter(mainRouter)
+fishMeasureProtocolRouter(mainRouter)
+hatcheryInfoRouter(mainRouter)
+permitInfoRouter(mainRouter)
+releaseSiteRouter(mainRouter)
+programPersonnelTeamRouter(mainRouter)
 
 export default mainRouter
