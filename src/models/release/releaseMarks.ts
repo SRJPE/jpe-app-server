@@ -14,5 +14,16 @@ async function postReleaseMarks(releaseMarks): Promise<Array<ReleaseMarks>> {
     throw error
   }
 }
+async function getTwoMostRecentReleaseMarks(): Promise<Array<ReleaseMarks>> {
+  try {
+    const releaseMarksRecords = await knex<ReleaseMarks>('ReleaseMarks')
+      .select('*')
+      .orderBy('id', 'desc')
+      .limit(2)
+    return releaseMarksRecords
+  } catch (error) {
+    throw error
+  }
+}
 
-export { postReleaseMarks }
+export { postReleaseMarks, getTwoMostRecentReleaseMarks }

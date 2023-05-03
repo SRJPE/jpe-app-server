@@ -52,6 +52,52 @@ export interface Program {
 
 export interface CatchRaw {}
 
+export interface ExistingMarksI {
+  id: number
+  programId: number
+  releaseId: number
+  markAppliedId: number
+  catchRawId: number
+  fishId: string
+  markTypeId: number
+  markPositionId: number
+  markColorId: number
+  markCode: string
+  createdAt: Date
+  updatedAt: Date
+}
+export interface GeneticSamplingDataI {
+  id: number
+  catchRawId: number
+  sampleId: string
+  sampleBin?: string
+  mucusSwab: boolean
+  finClip: boolean
+  comments?: string
+}
+export interface GeneticSamplingCrewI {
+  id: number
+  personnelId: number
+  geneticSamplingDataId: number
+}
+export interface MarkAppliedI {
+  id: number
+  catchRawId: number
+  programId: number
+  markTypeId: number
+  markPositionId: number
+  markColorId?: number
+  markCode?: number
+  comments?: string
+  createdAt: Date
+  updatedAt: Date
+}
+export interface MarkAppliedCrewI {
+  id: number
+  personnel: number
+  markAppliedId: number
+}
+
 export interface Release {
   id: number
   programId: number
