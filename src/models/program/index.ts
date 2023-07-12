@@ -1,5 +1,17 @@
 import db from '../../db'
-import { Program } from '../../interfaces'
+import {
+  FishMeasureProtocol,
+  HatcheryInfo,
+  PermitInfo,
+  Personnel,
+  Program,
+  TrapLocations,
+} from '../../interfaces'
+import { postFishMeasureProtocol } from '../fishMeasureProtocol'
+import { postHatcheryInfo } from '../hatcheryInfo'
+import { postPermitInfo } from '../permitInfo'
+import { postPersonnel } from '../personnel'
+import { postTrapLocations } from '../trapLocations'
 
 const { knex } = db
 
@@ -28,13 +40,118 @@ async function getAllPrograms(): Promise<any> {
   }
 }
 
-async function postProgram(programValues): Promise<any> {
+async function postProgram(programValues): Promise<{
+  createdProgramResponse: any
+  createdTrappingSitesResponse: any
+  createdPersonnelResponse: any
+  createdHatcheryInfoResponse: any
+  createdFishMeasureProtocolResponse: any
+  createdPermitInformationResponse: any
+}> {
   try {
-    const createdProgramResponse = await knex<any>('program').insert(
-      programValues,
-      ['*']
-    )
-    return createdProgramResponse
+    const {
+      metaData,
+      trappingSites,
+      crewMembers,
+      efficiencyTrialProtocols,
+      trappingProtocols,
+      permittingInformation,
+    } = programValues
+
+    let createdProgramResponse = []
+    let createdTrappingSitesResponse = []
+    let createdPersonnelResponse = []
+    let createdHatcheryInfoResponse = []
+    let createdFishMeasureProtocolResponse = []
+    let createdPermitInformationResponse = []
+
+    // ===== metaData: // =====
+
+    createdProgramResponse = await knex<Program>('program').insert(metaData, [
+      '*',
+    ])
+
+    const createdProgramId = createdProgramResponse[0]?.id
+
+    // ===== trapLocation: // =====
+    //release sites need to be addressed
+
+    if (trappingSites.length > 0) {
+      const trappingSitesPayload: TrapLocations = trappingSites.map(
+        (trappingSite) => {
+          return {
+            programId: createdProgramId,
+            ...trappingSite,
+          }
+        }
+      )
+
+      createdTrappingSitesResponse = await postTrapLocations(
+        trappingSitesPayload
+      )
+    }
+    // ===== personnel & programPersonnel// =====
+
+    if (crewMembers.length > 0) {
+      await Promise.all(
+        crewMembers.map(async (crewMember: any) => {
+          const personnelPayload: Personnel = {
+            programId: createdProgramId,
+            ...crewMember,
+          }
+          const createdSinglePersonnelResponse = await postPersonnel(
+            personnelPayload
+          )
+          createdPersonnelResponse.push(createdSinglePersonnelResponse[0])
+        })
+      )
+    }
+
+    // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
+
+    if (efficiencyTrialProtocols) {
+      const hatcheryInfoPayload: HatcheryInfo = {
+        programId: createdProgramId,
+        ...efficiencyTrialProtocols,
+      }
+      createdHatcheryInfoResponse = await postHatcheryInfo(hatcheryInfoPayload)
+    }
+
+    // ===== fishMeasureProtocol: Trapping protocol // =====
+    //species, lifeStage & run need to be filtered in the front.
+
+    if (trappingProtocols.length > 0) {
+      const fishMeasureProtocolPayload: FishMeasureProtocol =
+        trappingProtocols.map((protocolObj) => {
+          return {
+            programId: createdProgramId,
+            ...protocolObj,
+          }
+        })
+      createdFishMeasureProtocolResponse = await postFishMeasureProtocol(
+        fishMeasureProtocolPayload
+      )
+    }
+
+    // ===== PermitInformation::: // =====
+    // take and mortality needs to be addressed
+
+    if (permittingInformation) {
+      const permitInfoPayload: PermitInfo = {
+        programId: createdProgramId,
+        ...permittingInformation,
+      }
+      createdPermitInformationResponse = await postPermitInfo(permitInfoPayload)
+    }
+
+    return {
+      createdProgramResponse: createdProgramResponse[0],
+      createdTrappingSitesResponse,
+      createdPersonnelResponse,
+      createdHatcheryInfoResponse: createdHatcheryInfoResponse[0],
+      createdFishMeasureProtocolResponse,
+      createdPermitInformationResponse: createdPermitInformationResponse[0],
+    }
   } catch (error) {
     throw error
   }

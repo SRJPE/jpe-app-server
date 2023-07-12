@@ -16,6 +16,9 @@ import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunction
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 import { getTaxon } from '../models/trapVisit/taxon'
 import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
+import { getFundingAgencyOptions } from '../models/program/agency'
+import { getListingUnitOptions } from '../models/program/listingUnit'
+import { getFrequencyOptions } from '../models/program/frequency'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -37,6 +40,9 @@ const getAllTrapVisitDropdowns = async () => {
     getVisitTypes(),
     getPlusCountMethodology(),
     getTwoMostRecentReleaseMarks(),
+    getFundingAgencyOptions(),
+    getListingUnitOptions(),
+    getFrequencyOptions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -55,6 +61,9 @@ const getAllTrapVisitDropdowns = async () => {
     'visitType',
     'plusCountMethodology',
     'twoMostRecentReleaseMarks',
+    'fundingAgency',
+    'listingUnit',
+    'frequency',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
