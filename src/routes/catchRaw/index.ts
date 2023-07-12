@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   getCatchRawRecord,
+  getProgramCatchRawRecords,
   getTrapVisitCatchRawRecords,
   postCatchRaw,
   putCatchRaw,
@@ -26,6 +27,17 @@ export default (mainRouter: Router) => {
     try {
       const { trapVisitId } = req.params
       const catchRawRecords = await getTrapVisitCatchRawRecords(trapVisitId)
+      res.status(200).send(catchRawRecords)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  catchRawRouter.get('/program/:programId', async (req, res) => {
+    try {
+      const { programId } = req.params
+      const catchRawRecords = await getProgramCatchRawRecords(programId)
       res.status(200).send(catchRawRecords)
     } catch (error) {
       console.error(error)

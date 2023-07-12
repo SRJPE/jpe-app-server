@@ -37,6 +37,47 @@ async function getTrapVisitCatchRawRecords(
   return catchRawRecords
 }
 
+async function getProgramCatchRawRecords(programId: number | string) {
+  const payload = []
+
+  const catchRaws = await knex<CatchRaw>('catchRaw')
+    .select('*')
+    .where('programId', programId)
+
+  await Promise.all(
+    catchRaws.map(async (catchRaw) => {
+      const markApplied = await knex<MarkAppliedI>('markApplied')
+        .select('*')
+        .where('catchRawId', catchRaw.id)
+
+      const existingMarks = await knex<ExistingMarksI>('existingMarks')
+        .select('*')
+        .where('catchRawId', catchRaw.id)
+
+      const geneticSample = await knex<GeneticSamplingDataI>(
+        'geneticSamplingData'
+      )
+        .select('*')
+        .where('catchRawId', catchRaw.id)
+
+      let release: any = {}
+      if (catchRaw.releaseId) {
+        release = await knex('release').select('*').where('id', catchRaw.releaseId)[0]
+      }
+
+      payload.push({
+        createdCatchRawResponse: catchRaw,
+        createdMarkAppliedResponse: markApplied ?? null,
+        createdExistingMarksResponse: existingMarks ?? null,
+        createdGeneticSamplingDataResponse: geneticSample ?? null,
+        releaseResponse: release
+      })
+    })
+  )
+
+  return payload
+}
+
 // post trapVisit - admin only route
 // single object or array of objects
 async function postCatchRaw(catchRawValues): Promise<{
@@ -170,6 +211,7 @@ async function putCatchRaw(
 export {
   getCatchRawRecord,
   getTrapVisitCatchRawRecords,
+  getProgramCatchRawRecords,
   postCatchRaw,
   putCatchRaw,
 }

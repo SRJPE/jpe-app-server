@@ -11,6 +11,7 @@ import visitTypeRouter from './visitType'
 import trapCoordinatesRouter from './trapCoordinates'
 import { getAllTrapVisitDropdowns } from '../../services/trapVisit'
 import {
+  getProgramTrapVisits,
   getTrapVisit,
   postTrapVisit,
   putTrapVisit,
@@ -49,6 +50,17 @@ export default (mainRouter: Router) => {
       const { trapVisitId } = req.params
       const trapVisit = await getTrapVisit(trapVisitId)
       res.status(200).send(trapVisit)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.get('/program/:programId', async (req, res) => {
+    try {
+      const { programId } = req.params
+      const trapVisits = await getProgramTrapVisits(programId)
+      res.status(200).send(trapVisits)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
