@@ -42,6 +42,7 @@ async function getProgramCatchRawRecords(programId: number | string) {
 
   const catchRaws = await knex<CatchRaw>('catchRaw')
     .select('*')
+    .limit(20)
     .where('programId', programId)
 
   await Promise.all(

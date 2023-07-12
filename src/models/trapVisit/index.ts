@@ -43,6 +43,7 @@ async function getProgramTrapVisits(programId: number | string) {
 
   const trapVisits = await knex<TrapVisit>('trapVisit')
     .select('*')
+    .limit(20)
     .where('programId', programId)
 
   await Promise.all(
