@@ -38,6 +38,43 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
   }
 }
 
+async function getProgramTrapVisits(programId: number | string) {
+  const payload = []
+
+  const trapVisits = await knex<TrapVisit>('trapVisit')
+    .select('*')
+    .limit(20)
+    .where('programId', programId)
+
+  await Promise.all(
+    trapVisits.map(async (trapVisit) => {
+      const trapVisitEnvironmental = await knex<TrapVisit>(
+        'trapVisitEnvironmental'
+      )
+        .select('*')
+        .where('trapVisitId', trapVisit.id)
+
+      const crew = await knex<TrapVisit>('trapVisitCrew')
+        .select('*')
+        .where('trapVisitId', trapVisit.id)
+
+      const coordinates = await knex<TrapVisit>('trapCoordinates')
+        .select('*')
+        .where('trapVisitId', trapVisit.id)
+
+      payload.push({
+        createdTrapVisitResponse: trapVisit,
+        createdTrapVisitCrewResponse:
+          crew.map((crewResponse: any) => crewResponse.personnelId) ?? null,
+        createdTrapCoordinatesResponse: coordinates[0] ?? null,
+        createdTrapVisitEnvironmentalResponse: trapVisitEnvironmental ?? null,
+      })
+    })
+  )
+
+  return payload
+}
+
 // post trapVisit - admin only route
 // trapVisitValues: Object representing 1 trap visit
 async function postTrapVisit(trapVisitValues): Promise<{
@@ -171,4 +208,4 @@ async function putTrapVisit(
   }
 }
 
-export { getTrapVisit, postTrapVisit, putTrapVisit }
+export { getTrapVisit, getProgramTrapVisits, postTrapVisit, putTrapVisit }
