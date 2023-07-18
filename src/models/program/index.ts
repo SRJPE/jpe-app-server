@@ -135,6 +135,7 @@ async function postProgram(programValues): Promise<{
         programId: createdProgramId,
         ...permittingInformation,
       }
+      //also posts expectedTakeAndMortality
       createdPermitInformationResponse = await postPermitInfo(permitInfoPayload)
     }
 
