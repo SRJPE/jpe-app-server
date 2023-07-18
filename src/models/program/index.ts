@@ -66,7 +66,6 @@ async function postProgram(programValues): Promise<{
     let createdPermitInformationResponse = []
 
     // ===== metaData: // =====
-
     createdProgramResponse = await knex<Program>('program').insert(metaData, [
       '*',
     ])
@@ -74,8 +73,6 @@ async function postProgram(programValues): Promise<{
     const createdProgramId = createdProgramResponse[0]?.id
 
     // ===== trapLocation: // =====
-    //release sites need to be addressed
-
     if (trappingSites.length > 0) {
       const trappingSitesPayload: TrapLocations = trappingSites.map(
         (trappingSite) => {
@@ -85,14 +82,14 @@ async function postProgram(programValues): Promise<{
           }
         }
       )
-
+      //also posts release Sites
       createdTrappingSitesResponse = await postTrapLocations(
         trappingSitesPayload
       )
     }
-    // ===== personnel & programPersonnel// =====
 
-    if (crewMembers.length > 0) {
+    // ===== personnel & programPersonnel// =====
+    if (crewMembers && crewMembers.length > 0) {
       await Promise.all(
         crewMembers.map(async (crewMember: any) => {
           const personnelPayload: Personnel = {
@@ -108,7 +105,6 @@ async function postProgram(programValues): Promise<{
     }
 
     // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
-
     if (efficiencyTrialProtocols) {
       const hatcheryInfoPayload: HatcheryInfo = {
         programId: createdProgramId,
@@ -119,8 +115,7 @@ async function postProgram(programValues): Promise<{
 
     // ===== fishMeasureProtocol: Trapping protocol // =====
     //species, lifeStage & run need to be filtered in the front.
-
-    if (trappingProtocols.length > 0) {
+    if (trappingProtocols && trappingProtocols.length > 0) {
       const fishMeasureProtocolPayload: FishMeasureProtocol =
         trappingProtocols.map((protocolObj) => {
           return {
@@ -135,7 +130,6 @@ async function postProgram(programValues): Promise<{
 
     // ===== PermitInformation::: // =====
     // take and mortality needs to be addressed
-
     if (permittingInformation) {
       const permitInfoPayload: PermitInfo = {
         programId: createdProgramId,
