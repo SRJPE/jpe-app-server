@@ -1,5 +1,6 @@
 import db from '../../db'
 import { TrapLocations } from '../../interfaces'
+import { postReleaseSite } from '../releaseSite'
 
 const { knex } = db
 
@@ -22,9 +23,37 @@ async function postTrapLocations(
   trapLocationsValues
 ): Promise<TrapLocations[]> {
   try {
+    let trappingSitesPayload = []
+    let releaseSitesPayload = []
+    trapLocationsValues.forEach((trappingSite: any) => {
+      trappingSitesPayload.push({
+        programId: trappingSite.programId,
+        trapName: trappingSite.trapName,
+        dataRecorderId: trappingSite.dataRecorderId,
+        dataRecorderAgencyId: trappingSite.dataRecorderAgencyId,
+        coneSizeFt: trappingSite.coneSizeFt,
+        xCoord: trappingSite.xCoord,
+        yCoord: trappingSite.yCoord,
+        gageAgency: trappingSite.gageAgency,
+        createdAt: trappingSite.createdAt,
+        updatedAt: trappingSite.updatedAt,
+      })
+      releaseSitesPayload.push({
+        releaseSiteName: trappingSite.releaseSiteName,
+        release_site_x_coord: trappingSite.releaseSiteXCoord,
+        release_site_y_coord: trappingSite.releaseSiteYCoord,
+      })
+    })
     const createdTrapLocations = await knex<TrapLocations>(
       'trapLocations'
-    ).insert(trapLocationsValues, ['*'])
+    ).insert(trappingSitesPayload, ['*'])
+
+    if (releaseSitesPayload) {
+      for (let i = 0; i < createdTrapLocations.length; i++) {
+        releaseSitesPayload[i].trapLocationsId = createdTrapLocations[i].id
+      }
+      let releaseSitesResponse = await postReleaseSite(releaseSitesPayload)
+    }
 
     return createdTrapLocations
   } catch (error) {
