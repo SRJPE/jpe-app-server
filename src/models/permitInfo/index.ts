@@ -1,5 +1,6 @@
 import db from '../../db'
 import { PermitInfo } from '../../interfaces'
+import { postTakeAndMortality } from './takeAndMortality'
 
 const { knex } = db
 
@@ -45,15 +46,13 @@ async function postPermitInfo(permitInfoValues): Promise<PermitInfo[]> {
       const expectedTakeAndMortalityPayload = expectedTakeAndMortality.map(
         (entry: any) => {
           return {
-            programId: createdPermitInfo[0]?.id,
+            permitInfoId: createdPermitInfo[0]?.id,
             ...entry,
           }
         }
       )
-      console.log(
-        '🚀 ~ postPermitInfo ~ expectedTakeAndMortalityPayload:',
-        expectedTakeAndMortalityPayload
-      )
+
+      await postTakeAndMortality(expectedTakeAndMortalityPayload)
     }
 
     return createdPermitInfo
