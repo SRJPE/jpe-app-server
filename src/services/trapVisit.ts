@@ -15,6 +15,7 @@ import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotPro
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 import { getTaxon } from '../models/trapVisit/taxon'
+import { getFishConditions } from '../models/trapVisit/fishCondition'
 import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
@@ -43,6 +44,7 @@ const getAllTrapVisitDropdowns = async () => {
     getFundingAgencyOptions(),
     getListingUnitOptions(),
     getFrequencyOptions(),
+    getFishConditions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -64,6 +66,7 @@ const getAllTrapVisitDropdowns = async () => {
     'fundingAgency',
     'listingUnit',
     'frequency',
+    'fishCondition',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
