@@ -200,42 +200,52 @@ export interface TrapVisitEnvironmental {
 }
 
 export interface HatcheryInfo {
-    id: number
-    hatcheryName?: string
-    streamName?: string
-    agreementId?: string
-    programId?: number
-    aggrementStartDate?: Date
-    aggrementEndDate?: Date
-    renewalDate?: Date
-    frequencyOfFishCollection?: number
-    quantityOfFish?: number
-    hatcheryFileLink?: string
+  id: number
+  hatcheryName?: string
+  streamName?: string
+  agreementId?: string
+  programId?: number
+  agreementStartDate?: Date
+  agreementEndDate?: Date
+  renewalDate?: Date
+  frequencyOfFishCollection?: number
+  quantityOfFish?: number
+  hatcheryFileLink?: string
 }
 
 export interface FishMeasureProtocol {
-    id: number
-    programId?: number
-    species?: string
-    lifeStage?: number
-    run?: number
-    numberMeasured?: number
+  id: number
+  programId?: number
+  species?: string
+  lifeStage?: number
+  run?: number
+  numberMeasured?: number
 }
 
 export interface PermitInfo {
-    id: number
-    permitId?: string
-    programId?: number
-    streamName?: string
-    permitStartDate?: Date
-    permitEndDate?: Date
-    flowThreshold?: number
-    temperatureThreshold?: number
-    frequencySamplingInclementWeather?: number
-    species?: string
-    listingUnit?: number
-    fishLifeStage?: string
-    allowedExpectedTake?: number
-    allowedMortalityCount?: number
-    permitFileLink?: string
+  id: number
+  permitId?: string
+  programId?: number
+  streamName?: string
+  permitStartDate?: Date
+  permitEndDate?: Date
+  flowThreshold?: number
+  temperatureThreshold?: number
+  frequencySamplingInclementWeather?: number
+  species?: string
+  listingUnit?: number
+  fishLifeStage?: string
+  allowedExpectedTake?: number
+  allowedMortalityCount?: number
+  permitFileLink?: string
+}
+export interface TakeAndMortality {
+  id: number
+  permit_info_id: number
+  species: string
+  listing_unit: number
+  fish_life_stage: number
+  allowed_expected_take: number
+  allowed_mortality_count: number
+  comments: string
 }
