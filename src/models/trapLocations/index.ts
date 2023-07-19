@@ -31,6 +31,7 @@ async function postTrapLocations(
         trapName: trappingSite.trapName,
         dataRecorderId: trappingSite.dataRecorderId,
         dataRecorderAgencyId: trappingSite.dataRecorderAgencyId,
+        siteName: trappingSite.siteName,
         coneSizeFt: trappingSite.coneSizeFt,
         xCoord: trappingSite.xCoord,
         yCoord: trappingSite.yCoord,
@@ -52,7 +53,7 @@ async function postTrapLocations(
       for (let i = 0; i < createdTrapLocations.length; i++) {
         releaseSitesPayload[i].trapLocationsId = createdTrapLocations[i].id
       }
-      let releaseSitesResponse = await postReleaseSite(releaseSitesPayload)
+      await postReleaseSite(releaseSitesPayload)
     }
 
     return createdTrapLocations
