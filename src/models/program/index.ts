@@ -73,7 +73,7 @@ async function postProgram(programValues): Promise<{
     const createdProgramId = createdProgramResponse[0]?.id
 
     // ===== trapLocation: // =====
-    if (trappingSites.length > 0) {
+    if (trappingSites && trappingSites.length > 0) {
       const trappingSitesPayload: TrapLocations = trappingSites.map(
         (trappingSite) => {
           return {
@@ -105,7 +105,7 @@ async function postProgram(programValues): Promise<{
     }
 
     // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
-    if (efficiencyTrialProtocols) {
+    if (efficiencyTrialProtocols && efficiencyTrialProtocols.length > 0) {
       const hatcheryInfoPayload: HatcheryInfo = {
         programId: createdProgramId,
         ...efficiencyTrialProtocols,
@@ -114,7 +114,6 @@ async function postProgram(programValues): Promise<{
     }
 
     // ===== fishMeasureProtocol: Trapping protocol // =====
-    //species, lifeStage & run need to be filtered in the front.
     if (trappingProtocols && trappingProtocols.length > 0) {
       const fishMeasureProtocolPayload: FishMeasureProtocol =
         trappingProtocols.map((protocolObj) => {
@@ -129,8 +128,7 @@ async function postProgram(programValues): Promise<{
     }
 
     // ===== PermitInformation::: // =====
-    // take and mortality needs to be addressed
-    if (permittingInformation) {
+    if (permittingInformation && permittingInformation.length > 0) {
       const permitInfoPayload: PermitInfo = {
         programId: createdProgramId,
         ...permittingInformation,
