@@ -30,53 +30,81 @@ async function getCatchRawRecord(
 async function getTrapVisitCatchRawRecords(
   trapVisitId
 ): Promise<Array<CatchRaw>> {
-  const catchRawRecords = await knex<CatchRaw>('catchRaw')
-    .select('*')
-    .where('trapVisitId', trapVisitId)
+  try {
+    const catchRawRecords = await knex<CatchRaw>('catchRaw')
+      .select('*')
+      .where('trapVisitId', trapVisitId)
 
-  return catchRawRecords
+    return catchRawRecords
+  } catch (error) {
+    throw error
+  }
 }
 
 async function getProgramCatchRawRecords(programId: number | string) {
-  const payload = []
+  try {
+    // get current date, set year to previous year
+    const pastYear = new Date()
+    pastYear.setFullYear(pastYear.getFullYear() - 1)
 
-  const catchRaws = await knex<CatchRaw>('catchRaw')
-    .select('*')
-    .limit(20)
-    .where('programId', programId)
+    const catchRaws = await knex<CatchRaw>('catchRaw')
+      .select('*')
+      .where('programId', programId)
+      .andWhere('created_at', '>=', pastYear)
+      .orderBy('catchRaw.id')
 
-  await Promise.all(
-    catchRaws.map(async (catchRaw) => {
-      const markApplied = await knex<MarkAppliedI>('markApplied')
-        .select('*')
-        .where('catchRawId', catchRaw.id)
+    const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
-      const existingMarks = await knex<ExistingMarksI>('existingMarks')
-        .select('*')
-        .where('catchRawId', catchRaw.id)
+    const [markAppliedData, existingMarksData, geneticSampleData] =
+      await Promise.all([
+        knex<MarkAppliedI>('markApplied')
+          .select('*')
+          .whereIn('catchRawId', catchRawIds),
+        knex<ExistingMarksI>('existingMarks')
+          .select('*')
+          .whereIn('catchRawId', catchRawIds),
+        knex<GeneticSamplingDataI>('geneticSamplingData')
+          .select('*')
+          .whereIn('catchRawId', catchRawIds),
+      ])
 
-      const geneticSample = await knex<GeneticSamplingDataI>(
-        'geneticSamplingData'
+    const releaseIds = catchRaws
+      .filter(catchRaw => catchRaw.releaseId)
+      .map(catchRaw => catchRaw.releaseId)
+
+    const releaseData = await knex('release')
+      .select('*')
+      .whereIn('id', releaseIds)
+
+    const payload = catchRaws.map(catchRaw => {
+      const markApplied = markAppliedData.filter(
+        row => row.catchRawId === catchRaw.id
       )
-        .select('*')
-        .where('catchRawId', catchRaw.id)
+      const existingMarks = existingMarksData.filter(
+        row => row.catchRawId === catchRaw.id
+      )
+      const geneticSample = geneticSampleData.filter(
+        row => row.catchRawId === catchRaw.id
+      )
+      const release = releaseData.find(row => row.id === catchRaw.releaseId)
 
-      let release: any = {}
-      if (catchRaw.releaseId) {
-        release = await knex('release').select('*').where('id', catchRaw.releaseId)[0]
-      }
-
-      payload.push({
+      return {
         createdCatchRawResponse: catchRaw,
-        createdMarkAppliedResponse: markApplied ?? null,
-        createdExistingMarksResponse: existingMarks ?? null,
-        createdGeneticSamplingDataResponse: geneticSample ?? null,
-        releaseResponse: release
-      })
+        createdMarkAppliedResponse: markApplied.length ? markApplied : null,
+        createdExistingMarksResponse: existingMarks.length
+          ? existingMarks
+          : null,
+        createdGeneticSamplingDataResponse: geneticSample.length
+          ? geneticSample
+          : null,
+        releaseResponse: release || null,
+      }
     })
-  )
 
-  return payload
+    return payload
+  } catch (error) {
+    throw error
+  }
 }
 
 // post trapVisit - admin only route

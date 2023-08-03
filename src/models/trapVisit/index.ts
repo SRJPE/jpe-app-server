@@ -28,7 +28,7 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
         'unit.definition as measureUnitDefinition'
       )
 
-    const environmental = keyBy(environmentalResponse, (obj) => {
+    const environmental = keyBy(environmentalResponse, obj => {
       return camelCase(obj.measureName)
     })
 
@@ -39,40 +39,67 @@ async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
 }
 
 async function getProgramTrapVisits(programId: number | string) {
-  const payload = []
+  try {
+    // get current date, set year to previous year
+    const pastYear = new Date()
+    pastYear.setFullYear(pastYear.getFullYear() - 1)
 
-  const trapVisits = await knex<TrapVisit>('trapVisit')
-    .select('*')
-    .limit(20)
-    .where('programId', programId)
+    const trapVisits = await knex<TrapVisit>('trapVisit')
+      .select('*')
+      .where('programId', programId)
+      .andWhere('created_at', '>=', pastYear)
 
-  await Promise.all(
-    trapVisits.map(async (trapVisit) => {
-      const trapVisitEnvironmental = await knex<TrapVisit>(
-        'trapVisitEnvironmental'
+    const trapVisitIds = trapVisits.map(trapVisit => trapVisit.id)
+
+    const [trapVisitEnvironmentalData, crewData, coordinatesData] =
+      await Promise.all([
+        knex<any>('trapVisitEnvironmental')
+          .select('*')
+          .whereIn('trapVisitId', trapVisitIds),
+        knex<any>('trapVisitCrew')
+          .select('*')
+          .whereIn('trapVisitId', trapVisitIds),
+        knex<any>('trapCoordinates')
+          .select('*')
+          .whereIn('trapVisitId', trapVisitIds),
+      ])
+
+    const personnelIdsByTrapVisitId = crewData.reduce((acc, crewResponse) => {
+      const trapVisitId = crewResponse.trapVisitId
+      const personnelId = crewResponse.personnelId
+
+      if (!acc[trapVisitId]) {
+        acc[trapVisitId] = []
+      }
+
+      acc[trapVisitId].push(personnelId)
+      return acc
+    }, {})
+
+    const payload = trapVisits.map(trapVisit => {
+      const trapVisitEnvironmental = trapVisitEnvironmentalData.filter(
+        row => row.trapVisitId === trapVisit.id
       )
-        .select('*')
-        .where('trapVisitId', trapVisit.id)
 
-      const crew = await knex<TrapVisit>('trapVisitCrew')
-        .select('*')
-        .where('trapVisitId', trapVisit.id)
+      const personnelIds = personnelIdsByTrapVisitId[trapVisit.id] || null
 
-      const coordinates = await knex<TrapVisit>('trapCoordinates')
-        .select('*')
-        .where('trapVisitId', trapVisit.id)
+      const coordinates =
+        coordinatesData.find(row => row.trapVisitId === trapVisit.id) || null
 
-      payload.push({
+      return {
         createdTrapVisitResponse: trapVisit,
-        createdTrapVisitCrewResponse:
-          crew.map((crewResponse: any) => crewResponse.personnelId) ?? null,
-        createdTrapCoordinatesResponse: coordinates[0] ?? null,
-        createdTrapVisitEnvironmentalResponse: trapVisitEnvironmental ?? null,
-      })
+        createdTrapVisitCrewResponse: personnelIds,
+        createdTrapCoordinatesResponse: coordinates,
+        createdTrapVisitEnvironmentalResponse: trapVisitEnvironmental.length
+          ? trapVisitEnvironmental
+          : null,
+      }
     })
-  )
 
-  return payload
+    return payload
+  } catch (error) {
+    throw error
+  }
 }
 
 // post trapVisit - admin only route
@@ -115,7 +142,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
     )
     // insert trapVisitEnvironmental
     const trapVisitEnvironmentalPayload = trapVisitEnvironmental.map(
-      (measureObject) => {
+      measureObject => {
         return {
           trapVisitId: createdTrapVisit.id,
           ...measureObject,
@@ -126,7 +153,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
       await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
 
     const visitCrewPromises = []
-    trapVisitCrew.forEach(async (personnelId) => {
+    trapVisitCrew.forEach(async personnelId => {
       const trapVisitCrewPayload = {
         personnelId,
         trapVisitId: createdTrapVisit.id,
@@ -136,8 +163,8 @@ async function postTrapVisit(trapVisitValues): Promise<{
       )
     })
 
-    return Promise.all(visitCrewPromises).then((response) => {
-      const crewIds = response.map((response) => response[0].personnelId)
+    return Promise.all(visitCrewPromises).then(response => {
+      const crewIds = response.map(response => response[0].personnelId)
       return {
         createdTrapVisitResponse: createdTrapVisit,
         createdTrapVisitCrewResponse: crewIds,
@@ -163,7 +190,7 @@ async function putTrapVisit(
         .del()
 
       // insert new crew
-      const rowsToInsert = trapVisitValues.crew.map((personnelId) => {
+      const rowsToInsert = trapVisitValues.crew.map(personnelId => {
         return {
           personnelId,
           trapVisitId,
