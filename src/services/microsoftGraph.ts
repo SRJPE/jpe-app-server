@@ -75,15 +75,41 @@ export const getCurrentUser = async (id: string) => {
     throw error
   }
 }
+export const changeUserPassword = async (
+  id: string,
+  credentialsObj: { currentPassword: string; newPassword: string }
+) => {
+  try {
+    const graphClient = await getAuthenticatedClient()
+    const graphResponse = await graphClient!
+
+      .api(`/users/${id}/changePassword`)
+      .version('beta')
+      .post(credentialsObj)
+    console.log('🚀 ~ graphResponse:', graphResponse)
+
+    return graphResponse
+  } catch (error) {
+    console.log('🚀 ~ error:', error)
+    throw error
+  }
+}
 export const logOutUser = async (id: string) => {
   try {
     const graphClient = await getAuthenticatedClient()
     const graphResponse = await graphClient!
       .api(`/users/${id}/revokeSignInSessions`)
       .version('beta')
-      .post('')
+      .post(null)
+
+    console.log('🚀 ~ logOutUser ~ id:', id)
+    console.log('🚀 ~ logOutUser ~ graphResponse:', graphResponse)
+    // const graphResponse = await graphClient!.api(
+    //   `/users/${id}/revokeSignInSessions`
+    // )
 
     return graphResponse
+    // return 'LoggedOut'
   } catch (error) {
     throw error
   }

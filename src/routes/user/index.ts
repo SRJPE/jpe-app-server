@@ -6,6 +6,7 @@ import {
   getAllGraphUsers,
   getCurrentUser,
   logOutUser,
+  changeUserPassword,
 } from '../../services/microsoftGraph'
 import * as jwt from 'jsonwebtoken'
 
@@ -65,9 +66,33 @@ export default (mainRouter: Router) => {
 
   userRouter.post('/:azureUid/logout', async (req, res) => {
     const userId = req.params.azureUid
+
     try {
       const logOutRes = await logOutUser(userId)
+      console.log('🚀 ~ userRouter.post ~ logOutRes:', logOutRes)
+
       res.status(200).send(logOutRes)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  userRouter.post('/:azureUid/change-password', async (req, res) => {
+    const userId = req.params.azureUid
+    const credentialsObj = req.body
+
+    try {
+      const changeUserPasswordRes = await changeUserPassword(
+        userId,
+        credentialsObj
+      )
+      console.log(
+        '🚀 ~ userRouter.post ~ changeUserPasswordRes:',
+        changeUserPasswordRes
+      )
+
+      res.status(200).send(changeUserPasswordRes)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
