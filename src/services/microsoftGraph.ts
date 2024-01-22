@@ -65,13 +65,14 @@ export const getGraphUser = async userId => {
 export const getCurrentUser = async (id: string) => {
   try {
     const graphClient = await getAuthenticatedClient()
-    const graphResponse = await graphClient!
+    const currentUserResponse = await graphClient!
       .api(`/users/${id}`)
       .version('beta')
       .get()
 
-    return graphResponse
+    return { ...currentUserResponse }
   } catch (error) {
+    console.error('🚀 ~ getCurrentUser ~ error:', error)
     throw error
   }
 }
@@ -82,15 +83,13 @@ export const changeUserPassword = async (
   try {
     const graphClient = await getAuthenticatedClient()
     const graphResponse = await graphClient!
-
       .api(`/users/${id}/changePassword`)
       .version('beta')
       .post(credentialsObj)
-    console.log('🚀 ~ graphResponse:', graphResponse)
 
     return graphResponse
   } catch (error) {
-    console.log('🚀 ~ error:', error)
+    console.error('🚀 ~ error:', error)
     throw error
   }
 }
@@ -102,36 +101,29 @@ export const logOutUser = async (id: string) => {
       .version('beta')
       .post(null)
 
-    console.log('🚀 ~ logOutUser ~ id:', id)
-    console.log('🚀 ~ logOutUser ~ graphResponse:', graphResponse)
-    // const graphResponse = await graphClient!.api(
-    //   `/users/${id}/revokeSignInSessions`
-    // )
-
     return graphResponse
-    // return 'LoggedOut'
   } catch (error) {
     throw error
   }
 }
 
 export const patchUser = async (userId, requestBody) => {
+  const transformedRequestBody = {
+    givenName: requestBody.firstName,
+    surname: requestBody.lastName,
+    department: requestBody.department,
+    jobTitle: requestBody.jobTitle,
+    displayName: `${requestBody.firstName} ${requestBody.lastName}`,
+  }
+
   try {
     const graphClient = await getAuthenticatedClient()
     let res = await graphClient!
       .api(`/users/${userId}`)
       .version('beta')
-      .patch(requestBody)
-    const updatedUser = await graphClient!
-      .api(`/users/${userId}`)
-      .version('beta')
-      .select(
-        `displayName,surname,givenName,extension_${process.env.AZURE_EXTENSIONS_APP_CLIENT_ID}_Role`
-      )
-      .get()
-    return updatedUser
+      .patch(transformedRequestBody)
   } catch (error) {
-    console.error(error)
+    console.error('🚀 ~ patchUser ~ error:', error)
     throw error
   }
 }

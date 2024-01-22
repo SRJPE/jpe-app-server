@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   logOutUser,
   changeUserPassword,
+  patchUser,
 } from '../../services/microsoftGraph'
 import * as jwt from 'jsonwebtoken'
 
@@ -49,12 +50,17 @@ export default (mainRouter: Router) => {
     const userId = decodedToken.payload.sub
 
     const user = await getCurrentUser(userId)
+
     const userEmailIdentity = user.identities.find(
       identity => identity.signInType === 'emailAddress'
     )
     try {
       res.status(200).send({
         displayName: user.displayName,
+        firstName: user.givenName,
+        lastName: user.surname,
+        jobTitle: user.jobTitle,
+        department: user.department,
         azureUid: user.id,
         emailAddress: userEmailIdentity.issuerAssignedId,
       })
@@ -64,6 +70,18 @@ export default (mainRouter: Router) => {
     }
   })
 
+  userRouter.patch('/:azureUid/edit', async (req, res) => {
+    const userId = req.params.azureUid
+
+    try {
+      const patchUserRes = await patchUser(userId, req.body)
+
+      res.status(200).send(patchUserRes)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
   userRouter.post('/:azureUid/logout', async (req, res) => {
     const userId = req.params.azureUid
 
