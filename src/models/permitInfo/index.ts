@@ -29,6 +29,7 @@ async function postPermitInfo(permitInfoValues): Promise<PermitInfo[]> {
       frequencySamplingInclementWeather,
       expectedTakeAndMortality,
     } = permitInfoValues
+
     const permitInfoPayload = {
       programId,
       streamName,
