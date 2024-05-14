@@ -106,11 +106,18 @@ async function postProgram(programValues): Promise<{
 
     // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
     if (efficiencyTrialProtocols && efficiencyTrialProtocols.length > 0) {
-      const hatcheryInfoPayload: HatcheryInfo = {
-        programId: createdProgramId,
-        ...efficiencyTrialProtocols,
-      }
-      createdHatcheryInfoResponse = await postHatcheryInfo(hatcheryInfoPayload)
+      await Promise.all(
+        efficiencyTrialProtocols.map(async (efficiencyTrialObj: any) => {
+          const hatcheryInfoPayload: HatcheryInfo = {
+            programId: createdProgramId,
+            ...efficiencyTrialObj,
+          }
+          const createdHatcheryInfo = await postHatcheryInfo(
+            hatcheryInfoPayload
+          )
+          createdHatcheryInfoResponse.push(createdHatcheryInfo[0])
+        })
+      )
     }
 
     // ===== fishMeasureProtocol: Trapping protocol // =====
