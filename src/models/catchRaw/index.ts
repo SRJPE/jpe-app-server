@@ -118,14 +118,7 @@ async function getProgramCatchRawRecords(
   }
 }
 
-// post trapVisit - admin only route
-// single object or array of objects
-async function postCatchRaw(catchRawValues): Promise<{
-  createdCatchRawResponse: Array<CatchRaw>
-  createdExistingMarksResponse: Array<ExistingMarksI>
-  createdMarkAppliedResponse: Array<MarkAppliedI>
-  createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
-}> {
+const createCatchRaw = async (catchRawValues: Record<string, any>) => {
   try {
     const existingMarks = catchRawValues.existingMarks
     delete catchRawValues.existingMarks
@@ -227,6 +220,38 @@ async function postCatchRaw(catchRawValues): Promise<{
       createdMarkAppliedResponse,
       createdExistingMarksResponse,
       createdGeneticSamplingDataResponse,
+    }
+  } catch (error) {
+    return {
+      catchRawValues,
+      error,
+    }
+  }
+}
+
+// post trapVisit - admin only route
+// single object or array of objects
+async function postCatchRaw(catchRawValues): Promise<
+  | {
+      createdCatchRawResponse: Array<CatchRaw>
+      createdExistingMarksResponse: Array<ExistingMarksI>
+      createdMarkAppliedResponse: Array<MarkAppliedI>
+      createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
+    }
+  | any
+> {
+  try {
+    if (Array.isArray(catchRawValues)) {
+      const results = await Promise.all(
+        catchRawValues.map(async catchRawValue => {
+          const result = createCatchRaw(catchRawValue)
+          return result
+        })
+      )
+      return results
+    } else if (typeof catchRawValues === 'object') {
+      const result = createCatchRaw(catchRawValues)
+      return result
     }
   } catch (error) {
     throw error
