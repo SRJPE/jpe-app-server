@@ -1,21 +1,8 @@
-
-# JPE App Server Test
-
-
+# JPE App Server
 
 ## Usage
 
-This server uses node-postgres to make queries to our Azure DB directly.
-The bulk of this functionality can be found in `src/db/index.ts`
-
-```javascript
-export default {
-  query: (text: string, params: any[]) => pool.query(text, params),
-}
-```
-
-
-
+This server uses express and knex to receive http requests and make queries to the Azure Postgresql DB directly.
 
 ## Environment Variables
 
@@ -29,9 +16,8 @@ To run this project, you will need to add the following environment variables to
 
 `AZURE_DB`
 
+`AZURE_PORT`
 
-## Insomnia Testing
+`AZURE_SSL`
 
-After spinning up the server, try sending a get request to `http://localhost:8000/azure-testing/agency`
-to recieve this data from our DB
-
+`PORT`
