@@ -75,7 +75,7 @@ async function postProgram(programValues): Promise<{
     // ===== trapLocation: // =====
     if (trappingSites && trappingSites.length > 0) {
       const trappingSitesPayload: TrapLocations = trappingSites.map(
-        (trappingSite) => {
+        trappingSite => {
           return {
             programId: createdProgramId,
             ...trappingSite,
@@ -106,17 +106,24 @@ async function postProgram(programValues): Promise<{
 
     // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
     if (efficiencyTrialProtocols && efficiencyTrialProtocols.length > 0) {
-      const hatcheryInfoPayload: HatcheryInfo = {
-        programId: createdProgramId,
-        ...efficiencyTrialProtocols,
-      }
-      createdHatcheryInfoResponse = await postHatcheryInfo(hatcheryInfoPayload)
+      await Promise.all(
+        efficiencyTrialProtocols.map(async (efficiencyTrialObj: any) => {
+          const hatcheryInfoPayload: HatcheryInfo = {
+            programId: createdProgramId,
+            ...efficiencyTrialObj,
+          }
+          const createdHatcheryInfo = await postHatcheryInfo(
+            hatcheryInfoPayload
+          )
+          createdHatcheryInfoResponse.push(createdHatcheryInfo[0])
+        })
+      )
     }
 
     // ===== fishMeasureProtocol: Trapping protocol // =====
     if (trappingProtocols && trappingProtocols.length > 0) {
       const fishMeasureProtocolPayload: FishMeasureProtocol =
-        trappingProtocols.map((protocolObj) => {
+        trappingProtocols.map(protocolObj => {
           return {
             programId: createdProgramId,
             ...protocolObj,
@@ -129,12 +136,19 @@ async function postProgram(programValues): Promise<{
 
     // ===== PermitInformation::: // =====
     if (permittingInformation && permittingInformation.length > 0) {
-      const permitInfoPayload: PermitInfo = {
-        programId: createdProgramId,
-        ...permittingInformation,
-      }
-      //also posts expectedTakeAndMortality
-      createdPermitInformationResponse = await postPermitInfo(permitInfoPayload)
+      await Promise.all(
+        permittingInformation.map(async (permitInfoObj: any) => {
+          const permitInfoPayload: PermitInfo = {
+            programId: createdProgramId,
+            ...permitInfoObj,
+          }
+          //also posts expectedTakeAndMortality
+          const createdPermitInformation = await postPermitInfo(
+            permitInfoPayload
+          )
+          createdPermitInformationResponse.push(createdPermitInformation[0])
+        })
+      )
     }
 
     return {

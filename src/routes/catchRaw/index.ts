@@ -37,7 +37,12 @@ export default (mainRouter: Router) => {
   catchRawRouter.get('/program/:programId', async (req, res) => {
     try {
       const { programId } = req.params
-      const catchRawRecords = await getProgramCatchRawRecords(programId)
+      const { limit } = req.query
+      const parsedLimit = limit ? Number(limit) : undefined
+      const catchRawRecords = await getProgramCatchRawRecords(
+        programId,
+        parsedLimit
+      )
       res.status(200).send(catchRawRecords)
     } catch (error) {
       console.error(error)
