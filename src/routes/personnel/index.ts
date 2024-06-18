@@ -1,5 +1,10 @@
 import { Router } from 'express'
-import { getPersonnel, postPersonnel, updatePersonnel } from '../../models/personnel'
+import {
+  getPersonnel,
+  postPersonnel,
+  updatePersonnel,
+  getPersonnelbyAzureUid,
+} from '../../models/personnel'
 
 const personnelRouter = Router({ mergeParams: true })
 
@@ -11,6 +16,18 @@ export default (mainRouter: Router) => {
     try {
       const { id } = req.params
       const personnel = await getPersonnel(id)
+      res.status(200).send(personnel)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // GET
+  personnelRouter.get('/azure/:azureUid', async (req, res) => {
+    try {
+      const { azureUid } = req.params
+      const personnel = await getPersonnelbyAzureUid(azureUid)
       res.status(200).send(personnel)
     } catch (error) {
       console.error(error)
@@ -32,9 +49,9 @@ export default (mainRouter: Router) => {
 
   personnelRouter.put('/:id', async (req, res) => {
     try {
-      const {id} = req.params
+      const { id } = req.params
       const personnelValues = req.body
-      const updatedPersonnel = await updatePersonnel({id, personnelValues})
+      const updatedPersonnel = await updatePersonnel({ id, personnelValues })
       res.status(200).send(updatedPersonnel)
     } catch (error) {
       res.status(400).send(error)

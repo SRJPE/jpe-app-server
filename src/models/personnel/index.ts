@@ -4,12 +4,27 @@ import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 
 const { knex } = db
 
-// GET
+// GET by personnel id
 async function getPersonnel(id: number | string): Promise<Personnel> {
   try {
     const personnelRecords = await knex<Personnel>('personnel')
       .select('*')
       .where('id', id)
+
+    return personnelRecords[0]
+  } catch (error) {
+    throw error
+  }
+}
+
+// GET
+async function getPersonnelbyAzureUid(
+  azureUid: number | string
+): Promise<Personnel> {
+  try {
+    const personnelRecords = await knex<Personnel>('personnel')
+      .select('*')
+      .where('azureUid', azureUid)
 
     return personnelRecords[0]
   } catch (error) {
@@ -33,7 +48,7 @@ async function postPersonnel(personnelValues): Promise<Personnel[]> {
 
     if (programId) {
       await Promise.all(
-        createdPersonnel.map(async (personnel) => {
+        createdPersonnel.map(async personnel => {
           let programPersonnel = await postProgramPersonnelTeam({
             programId,
             personnelId: personnel.id,
@@ -60,4 +75,4 @@ async function updatePersonnel({ id, personnelValues }): Promise<Personnel> {
   }
 }
 
-export { getPersonnel, postPersonnel, updatePersonnel }
+export { getPersonnel, getPersonnelbyAzureUid, postPersonnel, updatePersonnel }
