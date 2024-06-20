@@ -178,10 +178,5 @@ Example:
 > | `200`     | `application/json; charset=utf-8` | JSON Object |
 > | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
 
-##### Example cURL
-
-> ```javascript
->  curl -X GET http://localhost:8000/trap-visit/visit-setup/default/:personnelId
-> ```
 </details>
 
