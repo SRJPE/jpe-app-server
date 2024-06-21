@@ -405,6 +405,7 @@ Example:
   ]
 }
 ```
+</details>
 
 ## Personnel Requests
 
