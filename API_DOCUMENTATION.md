@@ -288,6 +288,124 @@ Example:
 
 ------------------------------------------------------------------------------------------
 
+#### Get a Catch Record object
+
+<details>
+ <summary><code>GET</code> <code><b>/catch-raw/:catchRawId</b></code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code | content-type               | response    |
+> | --------- | -------------------------- | ----------- |
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+#### Get all Catch Records for a Trap Visit
+
+<details>
+ <summary><code>GET</code> <code><b>/catch-raw/trap-visit/:trapVisitId</b></code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code | content-type               | response    |
+> | --------- | -------------------------- | ----------- |
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+#### Get all Catch Records for a Program
+
+<details>
+ <summary><code>GET</code> <code><b>/catch-raw/program/:programId</b></code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code | content-type               | response    |
+> | --------- | -------------------------- | ----------- |
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+------------------------------------------------------------------------------------------
+
+#### Editing a catch record
+
+<details>
+ <summary><code>PUT</code> <code><b>/catch-raw/:catchRawId</b></code></summary>
+
+##### Body
+
+> | name      |  type     | data type               | description                                                           |
+> |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
+> | None      |  required | object (JSON)   | N/A  |
+Example:
+```
+{
+  "trapVisitId": <id created by database from associated trap visit>,
+  "programId": <id from program table>,
+  "taxonCode": <species id from taxon table>,
+  "captureRunClass": <id from run table> | NULL,
+  "captureRunClassMethod": <id from run_code_method table> | NULL,
+  "adiposeClipped": <boolean> | NULL,
+  "dead": <boolean> | NULL,
+  "lifeStage": <id from life_stage table> | NULL
+  "forkLength": <integer>,
+  "weight": <integer> | NULL,
+  "numFishCaught": <integer>,
+  "plusCount": <boolean> | NULL,
+  "plusCountMethodology": <id from plus_count_methodology table> | NULL,
+  "isRandom": <boolean> | NULL,
+  "releaseId": <id created by database from associated release record>,
+  "comments": <string> | NULL,
+  "createdBy": <personnel ID> | NULL,
+  "qcCompleted": <boolean> | NULL,
+  "qcCompletedBy": <personnel ID> | NULL,
+  "qcTime": <timestamp> | NULL,
+  "qcComments": <string> | NULL,
+  "existingMarks": [
+    {
+      "releaseId": <id created by database from associated release record> | NULL,
+      "markType": <id from mark_type table> ,
+      "markColor": <id from mark_color table>,
+      "markPosition": <id from body_part table> | NULL,
+      "crewMember": <crew member personnelId>
+    }
+  ],
+  "geneticSamplingData": [
+    {
+      "sampleId": <string>,
+      "mucusSwab": <boolean>,
+      "finClip": <boolean>,
+      "commments": <string> | NULL,
+      "crewMember": <crew member personnelId>
+    }
+  ],
+  "appliedMarks": [
+    { 
+      "markType": <id from mark_type table> ,
+      "markColor": <id from mark_color table>,
+      "markPosition": <id from body_part table> | NULL,
+    }
+  ]
+}
+```
+
 ## Personnel Requests
 
 ## Program Requests
