@@ -1,6 +1,13 @@
 # REST API Documentation
 
 This documentation outlines the requests, payloads, and responses currently available within this server.
+
+## Table of Contents
+
+1.  **[Trap Visit Requests](#trap-visit-requests)**
+2.  **[Catch Requests](#catch-requests)**
+3.  **[Personnel Requests](#personnel-requests)**
+4.  **[Program Requests](#program-requests)**
   
 ## Trap Visit Requests
 
