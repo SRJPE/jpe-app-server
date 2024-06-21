@@ -215,6 +215,79 @@ Example:
 
 ## Catch Requests
 
+#### Creating a catch record
+
+<details>
+ <summary><code>POST</code> <code><b>/catch-raw</b></code></summary>
+
+##### Body
+
+> | name      |  type     | data type               | description                                                           |
+> |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
+> | None      |  required | object (JSON)   | N/A  |
+Example:
+```
+{
+  "trapVisitId": <id created by database from associated trap visit>,
+  "programId": <id from program table>,
+  "taxonCode": <species id from taxon table>,
+  "captureRunClass": <id from run table> | NULL,
+  "captureRunClassMethod": <id from run_code_method table> | NULL,
+  "adiposeClipped": <boolean> | NULL,
+  "dead": <boolean> | NULL,
+  "lifeStage": <id from life_stage table> | NULL
+  "forkLength": <integer>,
+  "weight": <integer> | NULL,
+  "numFishCaught": <integer>,
+  "plusCount": <boolean> | NULL,
+  "plusCountMethodology": <id from plus_count_methodology table> | NULL,
+  "isRandom": <boolean> | NULL,
+  "releaseId": <id created by database from associated release record>,
+  "comments": <string> | NULL,
+  "createdBy": <personnel ID> | NULL,
+  "qcCompleted": <boolean> | NULL,
+  "qcCompletedBy": <personnel ID> | NULL,
+  "qcTime": <timestamp> | NULL,
+  "qcComments": <string> | NULL,
+  "existingMarks": [
+    {
+      "releaseId": <id created by database from associated release record> | NULL,
+      "markType": <id from mark_type table> ,
+      "markColor": <id from mark_color table>,
+      "markPosition": <id from body_part table> | NULL,
+      "crewMember": <crew member personnelId>
+    }
+  ],
+  "geneticSamplingData": [
+    {
+      "sampleId": <string>,
+      "mucusSwab": <boolean>,
+      "finClip": <boolean>,
+      "commments": <string> | NULL,
+      "crewMember": <crew member personnelId>
+    }
+  ],
+  "appliedMarks": [
+    { 
+      "markType": <id from mark_type table> ,
+      "markColor": <id from mark_color table>,
+      "markPosition": <id from body_part table> | NULL,
+    }
+  ]
+}
+```
+
+##### Responses
+
+> | http code     | content-type                      | response                                                            |
+> |---------------|-----------------------------------|---------------------------------------------------------------------|
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+------------------------------------------------------------------------------------------
+
 ## Personnel Requests
 
 ## Program Requests
