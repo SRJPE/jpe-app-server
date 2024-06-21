@@ -409,4 +409,90 @@ Example:
 
 ## Personnel Requests
 
+#### Creating a crew personnel (does not create an application user)
+
+<details>
+ <summary><code>POST</code> <code><b>/personnel</b></code></summary>
+
+##### Body
+
+> | name      |  type     | data type               | description                                                           |
+> |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
+> | None      |  required | object (JSON)   | N/A  |
+Example:
+```
+{
+  "firstName": <string>,
+  "lastName": <string>,
+  "email": <string> | NULL,
+  "phone": <string of 12 characters max> | NULL,
+  "agencyId": <id from agency table>,
+  "role": <enum of "lead" or "non-lead">,
+  "orcidId": <string> | NULL
+}
+```
+
+##### Responses
+
+> | http code     | content-type                      | response                                                            |
+> |---------------|-----------------------------------|---------------------------------------------------------------------|
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+------------------------------------------------------------------------------------------
+
+#### Get personnel
+
+<details>
+ <summary><code>GET</code> <code><b>/:personnelId</b></code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code | content-type               | response    |
+> | --------- | -------------------------- | ----------- |
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
+------------------------------------------------------------------------------------------
+
+#### Updating a crew personnel
+
+<details>
+ <summary><code>PUT</code> <code><b>/personnel/:personnelId</b></code></summary>
+
+##### Body
+
+> | name      |  type     | data type               | description                                                           |
+> |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
+> | None      |  required | object (JSON)   | N/A  |
+Example:
+```
+{
+  "firstName": <string>,
+  "lastName": <string>,
+  "email": <string> | NULL,
+  "phone": <string of 12 characters max> | NULL,
+  "agencyId": <id from agency table>,
+  "role": <enum of "lead" or "non-lead">,
+  "orcidId": <string> | NULL
+}
+```
+
+##### Responses
+
+> | http code     | content-type                      | response                                                            |
+> |---------------|-----------------------------------|---------------------------------------------------------------------|
+> | `200`     | `application/json; charset=utf-8` | JSON Object |
+> | `400`     | `application/json; charset=utf-8` | {"code":"400","message": \<error message> } |
+
+</details>
+
 ## Program Requests
