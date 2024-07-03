@@ -59,11 +59,11 @@ The port value for this server.
 
 ## Interacting with the User Interface and Database
 
-Please visit the GitHub repositories for the User Interface and the Server to access setup instructions for those portions of the application.
+Please visit the GitHub repositories for the User Interface and the Database to access setup instructions for those portions of the application.
 
-[User Interface (Tablet Application)](https://github.com/SRJPE/rst-pilot-app-client)
+[DataTackle User Interface (Tablet Application)](https://github.com/SRJPE/rst-pilot-app-client)
 
-[RST Database Repo](https://github.com/SRJPE/rst-database)
+[DataTackle Database Repo](https://github.com/SRJPE/rst-database)
 
 
 
