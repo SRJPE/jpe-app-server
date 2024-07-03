@@ -6,7 +6,7 @@
 2.  **[Dependencies](#dependencies)**
 3.  **[Environmental Variables](#environment-variables)**
 4.  **[Setup](#setup)**
-5.  **[Interacting with the User Interface and Database](#interacting-with-the-user-interface-and-server)**
+5.  **[Interacting with the User Interface and Database](#interacting-with-the-user-interface-and-database)**
 6.  **[REST API Documentation](#rest-api-documentation)**
 
 
@@ -57,7 +57,7 @@ The port value for this server.
 
 - You will need to refactor this logic if you do not intend to replicate the Azure AD B2C flow. The authentication middleware can you found in `src/middleware/auth-middleware.ts`
 
-## Interacting with the User Interface and Server
+## Interacting with the User Interface and Database
 
 Please visit the GitHub repositories for the User Interface and the Server to access setup instructions for those portions of the application.
 
