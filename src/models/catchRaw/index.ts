@@ -120,12 +120,12 @@ async function getProgramCatchRawRecords(
 
 const createCatchRaw = async (catchRawValues: Record<string, any>) => {
   try {
-    const existingMarks = catchRawValues.existingMarks
-    delete catchRawValues.existingMarks
-    const geneticSamplingData = catchRawValues.geneticSamplingData
-    delete catchRawValues.geneticSamplingData
-    const appliedMarks = catchRawValues.appliedMarks
-    delete catchRawValues.appliedMarks
+    const existingMarks = catchRawValues?.existingMarks
+    delete catchRawValues?.existingMarks
+    const geneticSamplingData = catchRawValues?.geneticSamplingData
+    delete catchRawValues?.geneticSamplingData
+    const appliedMarks = catchRawValues?.appliedMarks
+    delete catchRawValues?.appliedMarks
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
@@ -137,7 +137,7 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
     let createdMarkAppliedResponse = []
     let createdGeneticSamplingDataResponse = []
 
-    if (existingMarks.length > 0) {
+    if (existingMarks?.length > 0) {
       const existingMarksPayload = existingMarks.map((markObj: any) => {
         return {
           catchRawId: createdCatchRaw.id,
@@ -154,7 +154,7 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
       )
     }
 
-    if (geneticSamplingData.length > 0) {
+    if (geneticSamplingData?.length > 0) {
       await Promise.all(
         geneticSamplingData.map(async (geneticSamplingSubmission: any) => {
           const crewMember = geneticSamplingSubmission.crewMember
@@ -183,7 +183,7 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
       )
     }
 
-    if (appliedMarks.length > 0) {
+    if (appliedMarks?.length > 0) {
       await Promise.all(
         appliedMarks.map(async (appliedMarkSubmission: any) => {
           const crewMember = appliedMarkSubmission.crewMember
@@ -222,6 +222,8 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
       createdGeneticSamplingDataResponse,
     }
   } catch (error) {
+    console.log('error', error)
+    console.log('err', catchRawValues)
     return {
       catchRawValues,
       error,
@@ -243,7 +245,7 @@ async function postCatchRaw(catchRawValues): Promise<
   try {
     if (Array.isArray(catchRawValues)) {
       const results = await Promise.all(
-        catchRawValues.map(async catchRawValue => {
+        catchRawValues?.map(async catchRawValue => {
           const result = createCatchRaw(catchRawValue)
           return result
         })
