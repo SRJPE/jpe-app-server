@@ -106,6 +106,42 @@ export const logOutUser = async (id: string) => {
     throw error
   }
 }
+export const createNewUser = async requestBody => {
+  const transformedRequestBody = {
+    givenName: requestBody.firstName,
+    surname: requestBody.lastName,
+    department: requestBody.department,
+    jobTitle: requestBody.jobTitle,
+    displayName: `${requestBody.firstName} ${requestBody.lastName}`,
+    accountEnabled: true,
+    mailNickname: requestBody.emailAddress.split('@')[0],
+    // mail: requestBody.emailAddress,
+    passwordProfile: {
+      forceChangePasswordNextSignIn: true,
+      password: 'FishFood123!',
+    },
+    passwordPolicies: 'DisablePasswordExpiration',
+    identities: [
+      {
+        signInType: 'emailAddress',
+        issuer: process.env.AZURE_TENANT_DOMAIN_NAME,
+        issuerAssignedId: requestBody.emailAddress,
+      },
+    ],
+  }
+
+  try {
+    const graphClient = await getAuthenticatedClient()
+    const graphResponse = await graphClient!
+      .api(`/users`)
+      .version('beta')
+      .post(transformedRequestBody)
+
+    return graphResponse
+  } catch (error) {
+    throw error
+  }
+}
 
 export const patchUser = async (userId, requestBody) => {
   const transformedRequestBody = {

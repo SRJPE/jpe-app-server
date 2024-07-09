@@ -8,6 +8,7 @@ import {
   logOutUser,
   changeUserPassword,
   patchUser,
+  createNewUser,
 } from '../../services/microsoftGraph'
 import * as jwt from 'jsonwebtoken'
 
@@ -90,6 +91,20 @@ export default (mainRouter: Router) => {
       console.log('🚀 ~ userRouter.post ~ logOutRes:', logOutRes)
 
       res.status(200).send(logOutRes)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  userRouter.post('/create', async (req, res) => {
+    const requestBody = req.body
+
+    try {
+      const createNewUserRes = await createNewUser(requestBody)
+      console.log('🚀 ~ userRouter.post ~ createNewUserRes:', createNewUserRes)
+
+      res.status(200).send(createNewUserRes)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
