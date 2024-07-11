@@ -41,17 +41,28 @@ async function getTrapVisitCatchRawRecords(
   }
 }
 
-async function getProgramCatchRawRecords(programId: number | string) {
+async function getProgramCatchRawRecords(
+  programId: number | string,
+  limit?: number
+) {
   try {
     // get current date, set year to previous year
     const pastYear = new Date()
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
-    const catchRaws = await knex<CatchRaw>('catchRaw')
+    let query = knex<CatchRaw>('catchRaw')
       .select('*')
       .where('programId', programId)
       .andWhere('created_at', '>=', pastYear)
       .orderBy('catchRaw.id')
+
+    if (limit) {
+      query = query.limit(limit)
+    }
+
+    const catchRaws = await query
+
+    // Rest of the code...
 
     const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
