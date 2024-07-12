@@ -30,9 +30,9 @@ async function postRelease(releaseValues): Promise<{
   createdReleaseMarksResponse: Array<ReleaseMarks>
 }> {
   try {
-    const releaseMarks = releaseValues.marksArray
+    const releaseMarks = releaseValues.marksArray || []
     delete releaseValues.marksArray
-    const releaseCrew = releaseValues.releaseCrew
+    const releaseCrew = releaseValues.releaseCrew || []
     delete releaseValues.releaseCrew
 
     releaseValues.releasedAt = new Date(releaseValues.releasedAt)
@@ -44,27 +44,30 @@ async function postRelease(releaseValues): Promise<{
     )
 
     const createdRelease = createdReleaseResponse?.[0]
+    let createdReleaseCrewResponse = []
+    let createdReleaseMarksResponse = []
 
     // insert releaseCrew
-    const releaseCrewPayload = releaseCrew.map((personnelId: number) => {
-      return {
-        releaseId: createdRelease.id,
-        personnelId,
-      }
-    })
+    if (releaseCrew.length) {
+      const releaseCrewPayload = releaseCrew?.map((personnelId: number) => {
+        return {
+          releaseId: createdRelease.id,
+          personnelId,
+        }
+      })
+      createdReleaseCrewResponse = await postReleaseCrew(releaseCrewPayload)
+    }
 
-    const createdReleaseCrewResponse = await postReleaseCrew(releaseCrewPayload)
-
-    // insert releaseMarks
-    const releaseMarksPayload = releaseMarks.map((markObject) => {
-      return {
-        releaseId: createdRelease.id,
-        ...markObject,
-      }
-    })
-    const createdReleaseMarksResponse = await postReleaseMarks(
-      releaseMarksPayload
-    )
+    if (releaseMarks.length) {
+      // insert releaseMarks
+      const releaseMarksPayload = releaseMarks?.map(markObject => {
+        return {
+          releaseId: createdRelease.id,
+          ...markObject,
+        }
+      })
+      createdReleaseMarksResponse = await postReleaseMarks(releaseMarksPayload)
+    }
 
     return {
       createdReleaseResponse,
@@ -72,6 +75,7 @@ async function postRelease(releaseValues): Promise<{
       createdReleaseMarksResponse,
     }
   } catch (error) {
+    console.log('error', error)
     throw error
   }
 }
