@@ -60,8 +60,6 @@ export default (mainRouter: Router) => {
         displayName: user.displayName,
         firstName: user.givenName,
         lastName: user.surname,
-        jobTitle: user.jobTitle,
-        department: user.department,
         azureUid: user.id,
         emailAddress: userEmailIdentity.issuerAssignedId,
       })
@@ -102,7 +100,6 @@ export default (mainRouter: Router) => {
 
     try {
       const createNewUserRes = await createNewUser(requestBody)
-      console.log('🚀 ~ userRouter.post ~ createNewUserRes:', createNewUserRes)
 
       res.status(200).send(createNewUserRes)
     } catch (error) {
