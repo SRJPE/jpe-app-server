@@ -64,10 +64,13 @@ async function postPersonnel(personnelValues): Promise<Personnel[]> {
   }
 }
 
-async function updatePersonnel({ id, personnelValues }): Promise<Personnel> {
+async function updatePersonnel({
+  azureUid,
+  personnelValues,
+}): Promise<Personnel> {
   try {
     const updatedPersonnel = await knex<Personnel>('personnel')
-      .where('id', id)
+      .where('azure_uid', azureUid)
       .update(personnelValues, ['*'])
     return updatedPersonnel[0]
   } catch (error) {
