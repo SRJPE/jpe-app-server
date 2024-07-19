@@ -249,3 +249,9 @@ export interface TakeAndMortality {
   allowed_mortality_count: number
   comments: string
 }
+
+export interface FishConditionCatchI {
+  id: number
+  catchRawId: number
+  fishConditionId: string
+}
