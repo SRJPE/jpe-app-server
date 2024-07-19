@@ -41,17 +41,28 @@ async function getTrapVisitCatchRawRecords(
   }
 }
 
-async function getProgramCatchRawRecords(programId: number | string) {
+async function getProgramCatchRawRecords(
+  programId: number | string,
+  limit?: number
+) {
   try {
     // get current date, set year to previous year
     const pastYear = new Date()
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
-    const catchRaws = await knex<CatchRaw>('catchRaw')
+    let query = knex<CatchRaw>('catchRaw')
       .select('*')
       .where('programId', programId)
       .andWhere('created_at', '>=', pastYear)
       .orderBy('catchRaw.id')
+
+    if (limit) {
+      query = query.limit(limit)
+    }
+
+    const catchRaws = await query
+
+    // Rest of the code...
 
     const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
@@ -107,21 +118,14 @@ async function getProgramCatchRawRecords(programId: number | string) {
   }
 }
 
-// post trapVisit - admin only route
-// single object or array of objects
-async function postCatchRaw(catchRawValues): Promise<{
-  createdCatchRawResponse: Array<CatchRaw>
-  createdExistingMarksResponse: Array<ExistingMarksI>
-  createdMarkAppliedResponse: Array<MarkAppliedI>
-  createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
-}> {
+const createCatchRaw = async (catchRawValues: Record<string, any>) => {
   try {
-    const existingMarks = catchRawValues.existingMarks
-    delete catchRawValues.existingMarks
-    const geneticSamplingData = catchRawValues.geneticSamplingData
-    delete catchRawValues.geneticSamplingData
-    const appliedMarks = catchRawValues.appliedMarks
-    delete catchRawValues.appliedMarks
+    const existingMarks = catchRawValues?.existingMarks
+    delete catchRawValues?.existingMarks
+    const geneticSamplingData = catchRawValues?.geneticSamplingData
+    delete catchRawValues?.geneticSamplingData
+    const appliedMarks = catchRawValues?.appliedMarks
+    delete catchRawValues?.appliedMarks
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
@@ -133,7 +137,7 @@ async function postCatchRaw(catchRawValues): Promise<{
     let createdMarkAppliedResponse = []
     let createdGeneticSamplingDataResponse = []
 
-    if (existingMarks.length > 0) {
+    if (existingMarks?.length > 0) {
       const existingMarksPayload = existingMarks.map((markObj: any) => {
         return {
           catchRawId: createdCatchRaw.id,
@@ -150,7 +154,7 @@ async function postCatchRaw(catchRawValues): Promise<{
       )
     }
 
-    if (geneticSamplingData.length > 0) {
+    if (geneticSamplingData?.length > 0) {
       await Promise.all(
         geneticSamplingData.map(async (geneticSamplingSubmission: any) => {
           const crewMember = geneticSamplingSubmission.crewMember
@@ -179,7 +183,7 @@ async function postCatchRaw(catchRawValues): Promise<{
       )
     }
 
-    if (appliedMarks.length > 0) {
+    if (appliedMarks?.length > 0) {
       await Promise.all(
         appliedMarks.map(async (appliedMarkSubmission: any) => {
           const crewMember = appliedMarkSubmission.crewMember
@@ -216,6 +220,40 @@ async function postCatchRaw(catchRawValues): Promise<{
       createdMarkAppliedResponse,
       createdExistingMarksResponse,
       createdGeneticSamplingDataResponse,
+    }
+  } catch (error) {
+    console.log('error', error)
+    console.log('err', catchRawValues)
+    return {
+      catchRawValues,
+      error,
+    }
+  }
+}
+
+// post trapVisit - admin only route
+// single object or array of objects
+async function postCatchRaw(catchRawValues): Promise<
+  | {
+      createdCatchRawResponse: Array<CatchRaw>
+      createdExistingMarksResponse: Array<ExistingMarksI>
+      createdMarkAppliedResponse: Array<MarkAppliedI>
+      createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
+    }
+  | any
+> {
+  try {
+    if (Array.isArray(catchRawValues)) {
+      const results = await Promise.all(
+        catchRawValues?.map(async catchRawValue => {
+          const result = createCatchRaw(catchRawValue)
+          return result
+        })
+      )
+      return results
+    } else if (typeof catchRawValues === 'object') {
+      const result = createCatchRaw(catchRawValues)
+      return result
     }
   } catch (error) {
     throw error
