@@ -117,7 +117,7 @@ export interface MarkAppliedCrewI {
   markAppliedId: number
 }
 
-export interface FishConditionDataI {
+export interface CatchFishConditionI {
   id: number
   catchRawId: number
   fishConditionId: string
