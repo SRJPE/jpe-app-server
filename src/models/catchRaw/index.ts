@@ -240,14 +240,14 @@ async function postCatchRaw(catchRawValues): Promise<{
       )
     }
     if (fishConditionData.length > 0) {
-      const fishConditionCatchPayload = fishConditionData.map(
+      const fishConditionDataPayload = fishConditionData.map(
         (fishCondition: string) => {
           return fishCondition
         }
       )
 
       createdFishConditionDataResponse = await postExistingMarks(
-        fishConditionCatchPayload
+        fishConditionDataPayload
       )
     }
 

@@ -117,6 +117,12 @@ export interface MarkAppliedCrewI {
   markAppliedId: number
 }
 
+export interface FishConditionDataI {
+  id: number
+  catchRawId: number
+  fishConditionId: string
+}
+
 export interface Release {
   id: number
   programId: number
@@ -248,10 +254,4 @@ export interface TakeAndMortality {
   allowed_expected_take: number
   allowed_mortality_count: number
   comments: string
-}
-
-export interface FishConditionCatchI {
-  id: number
-  catchRawId: number
-  fishConditionId: string
 }
