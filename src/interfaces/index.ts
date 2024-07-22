@@ -141,7 +141,7 @@ export interface ReleaseMarks {
   releaseId: number
   markType: number
   markColor: number
-  bodyPart: number
+  markPosition: number
 }
 export interface ReleaseCrew {
   id: number
