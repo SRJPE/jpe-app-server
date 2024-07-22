@@ -143,13 +143,13 @@ async function createCatchRaw(catchRawValues): Promise<{
   createdCatchFishConditionResponse: Array<CatchFishConditionI>
 }> {
   try {
-    const existingMarks = catchRawValues?.existingMarks
+    const existingMarks = catchRawValues?.existingMarks || []
     delete catchRawValues?.existingMarks
-    const geneticSamplingData = catchRawValues?.geneticSamplingData
+    const geneticSamplingData = catchRawValues?.geneticSamplingData || []
     delete catchRawValues?.geneticSamplingData
-    const appliedMarks = catchRawValues?.appliedMarks
+    const appliedMarks = catchRawValues?.appliedMarks || []
     delete catchRawValues?.appliedMarks
-    const catchFishCondition = catchRawValues?.fishCondition
+    const catchFishCondition = catchRawValues?.fishCondition || []
     delete catchRawValues?.fishCondition
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
