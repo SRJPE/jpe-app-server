@@ -76,8 +76,6 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
         program['fishMeasureProtocol'] = fishMeasureProtocolData
       })
     )
-    console.log('programs', programs)
-
     return programs
   } catch (error) {
     throw error
