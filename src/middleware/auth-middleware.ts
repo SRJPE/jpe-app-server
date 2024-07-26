@@ -43,22 +43,23 @@ export async function isAuthenticated(
   }
 }
 
-export function isAuthorized(options: {
-  hasRole?: any
-  allowSameUser?: boolean
-}) {
-  return (req: Request, res: Response, next: Function) => {
-    const { role, email, uid } = res.locals
+// TO DO: Refactor for our use case
+// export function isAuthorized(options: {
+//   hasRole?: any
+//   allowSameUser?: boolean
+// }) {
+//   return (req: Request, res: Response, next: Function) => {
+//     const { role, email, uid } = res.locals
 
-    const { azureUid } = req.params
-    if (options.allowSameUser && azureUid === uid) return next()
+//     const { azureUid } = req.params
+//     if (options.allowSameUser && azureUid === uid) return next()
 
-    if (!role) return res.status(403).send()
+//     if (!role) return res.status(403).send()
 
-    if (options.hasRole.includes(role)) return next()
+//     if (options.hasRole.includes(role)) return next()
 
-    return res
-      .status(403)
-      .send(`Access to the requested resource is forbidden for ${email}`)
-  }
-}
+//     return res
+//       .status(403)
+//       .send(`Access to the requested resource is forbidden for ${email}`)
+//   }
+// }
