@@ -7,32 +7,37 @@ import { postTrapVisitEnvironmental } from './trapVisitEnvironmental'
 const { knex } = db
 
 // get trap visit
-async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
+async function getTrapVisit(trapVisitId: number | string): Promise<any> {
   try {
     const trapVisit = await knex<TrapVisit>('trapVisit')
       .select('*')
       .where('id', trapVisitId)
 
-    const crew = await knex<TrapVisit>('trapVisitCrew')
-      .select('*')
-      .where('trapVisitId', trapVisitId)
-      .join('personnel', 'personnel.id', 'trapVisitCrew.personnelId')
+    const [trapVisitEnvironmentalData, crewData, coordinatesData] =
+      await Promise.all([
+        knex<any>('trapVisitEnvironmental')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+        knex<any>('trapVisitCrew')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+        knex<any>('trapCoordinates')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+      ])
 
-    const environmentalResponse = await knex<TrapVisit>(
-      'trapVisitEnvironmental'
-    )
-      .where('trapVisitId', trapVisitId)
-      .join('unit', 'unit.id', 'trapVisitEnvironmental.measureUnit')
-      .select(
-        'trapVisitEnvironmental.*',
-        'unit.definition as measureUnitDefinition'
-      )
+    
+    const personnelIds = crewData.map((row) => row.personnelId)
 
-    const environmental = keyBy(environmentalResponse, (obj) => {
-      return camelCase(obj.measureName)
-    })
 
-    return { ...trapVisit[0], crew, environmental }
+    return {
+      createdTrapVisitResponse: trapVisit[0],
+      createdTrapVisitCrewResponse: personnelIds,
+      createdTrapCoordinatesResponse: coordinatesData.length  ? coordinatesData[0] :  null,
+      createdTrapVisitEnvironmentalResponse: trapVisitEnvironmentalData.length
+        ? trapVisitEnvironmentalData
+        : null,
+    }
   } catch (error) {
     throw error
   }
@@ -234,9 +239,11 @@ async function putTrapVisit(
         .andWhere('trapVisitId', trapVisitId)
         .del()
 
-      trapVisitValues.createdTrapVisitEnvironmentalResponse.forEach((measure) => {
-        delete measure.id
-      })
+      trapVisitValues.createdTrapVisitEnvironmentalResponse.forEach(
+        (measure) => {
+          delete measure.id
+        }
+      )
 
       const rowsToInsert = trapVisitValues.createdTrapVisitEnvironmentalResponse
 
