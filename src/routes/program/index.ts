@@ -4,7 +4,7 @@ import {
   postProgram,
   updateProgram,
 } from '../../models/program'
-import { getBiWeeklyPassageSummary } from '../../models/reports/biWeeklyPassageSummary'
+import { getBiWeeklyPassageSummary } from '../../models/reports'
 
 const programRouter = Router({ mergeParams: true })
 
