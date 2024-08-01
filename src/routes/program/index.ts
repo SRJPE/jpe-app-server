@@ -4,6 +4,7 @@ import {
   postProgram,
   updateProgram,
 } from '../../models/program'
+import { getBiWeeklyPassageSummary } from '../../models/reports/biWeeklyPassageSummary'
 
 const programRouter = Router({ mergeParams: true })
 
@@ -17,6 +18,18 @@ export default (mainRouter: Router) => {
       const { id } = req.params
       const usersPrograms = await getPersonnelPrograms(id)
       res.status(200).send(usersPrograms)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  //bi-weekly passage summary report
+  programRouter.get('/biweeklyPassageSummary/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const biweeklyPassageSummaryReport = await getBiWeeklyPassageSummary(id)
+      res.status(200).send(biweeklyPassageSummaryReport)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
