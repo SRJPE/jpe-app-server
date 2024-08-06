@@ -117,6 +117,12 @@ export interface MarkAppliedCrewI {
   markAppliedId: number
 }
 
+export interface CatchFishConditionI {
+  id: number
+  catchRawId: number
+  fishConditionId: string
+}
+
 export interface Release {
   id: number
   programId: number

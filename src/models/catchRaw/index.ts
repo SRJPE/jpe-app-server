@@ -4,12 +4,14 @@ import {
   ExistingMarksI,
   GeneticSamplingDataI,
   MarkAppliedI,
+  CatchFishConditionI,
 } from '../../interfaces'
 import { postExistingMarks } from './existingMarks'
 import { postGeneticSamplingData } from './geneticSamplingData'
 import { postGeneticSamplingCrew } from './geneticSamplingCrew'
 import { postMarkApplied } from './markApplied'
 import { postMarkAppliedCrew } from './markAppliedCrew'
+import { postCatchFishCondition } from './catchfishCondition'
 
 const { knex } = db
 
@@ -66,18 +68,25 @@ async function getProgramCatchRawRecords(
 
     const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
-    const [markAppliedData, existingMarksData, geneticSampleData] =
-      await Promise.all([
-        knex<MarkAppliedI>('markApplied')
-          .select('*')
-          .whereIn('catchRawId', catchRawIds),
-        knex<ExistingMarksI>('existingMarks')
-          .select('*')
-          .whereIn('catchRawId', catchRawIds),
-        knex<GeneticSamplingDataI>('geneticSamplingData')
-          .select('*')
-          .whereIn('catchRawId', catchRawIds),
-      ])
+    const [
+      markAppliedData,
+      existingMarksData,
+      geneticSampleData,
+      catchFishCondition,
+    ] = await Promise.all([
+      knex<MarkAppliedI>('markApplied')
+        .select('*')
+        .whereIn('catchRawId', catchRawIds),
+      knex<ExistingMarksI>('existingMarks')
+        .select('*')
+        .whereIn('catchRawId', catchRawIds),
+      knex<GeneticSamplingDataI>('geneticSamplingData')
+        .select('*')
+        .whereIn('catchRawId', catchRawIds),
+      knex<CatchFishConditionI>('catchFishCondition')
+        .select('*')
+        .whereIn('catchRawId', catchRawIds),
+    ])
 
     const releaseIds = catchRaws
       .filter(catchRaw => catchRaw.releaseId)
@@ -97,6 +106,9 @@ async function getProgramCatchRawRecords(
       const geneticSample = geneticSampleData.filter(
         row => row.catchRawId === catchRaw.id
       )
+      const fishCondition = catchFishCondition.filter(
+        row => row.catchRawId === catchRaw.id
+      )
       const release = releaseData.find(row => row.id === catchRaw.releaseId)
 
       return {
@@ -108,6 +120,9 @@ async function getProgramCatchRawRecords(
         createdGeneticSamplingDataResponse: geneticSample.length
           ? geneticSample
           : null,
+        createdCatchFishConditionResponse: fishCondition.length
+          ? fishCondition
+          : null,
         releaseResponse: release || null,
       }
     })
@@ -118,14 +133,24 @@ async function getProgramCatchRawRecords(
   }
 }
 
-const createCatchRaw = async (catchRawValues: Record<string, any>) => {
+// post trapVisit - admin only route
+// single object or array of objects
+async function createCatchRaw(catchRawValues): Promise<{
+  createdCatchRawResponse: Array<CatchRaw>
+  createdExistingMarksResponse: Array<ExistingMarksI>
+  createdMarkAppliedResponse: Array<MarkAppliedI>
+  createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
+  createdCatchFishConditionResponse: Array<CatchFishConditionI>
+}> {
   try {
-    const existingMarks = catchRawValues?.existingMarks
+    const existingMarks = catchRawValues?.existingMarks || []
     delete catchRawValues?.existingMarks
-    const geneticSamplingData = catchRawValues?.geneticSamplingData
+    const geneticSamplingData = catchRawValues?.geneticSamplingData || []
     delete catchRawValues?.geneticSamplingData
-    const appliedMarks = catchRawValues?.appliedMarks
+    const appliedMarks = catchRawValues?.appliedMarks || []
     delete catchRawValues?.appliedMarks
+    const catchFishCondition = catchRawValues?.fishCondition || []
+    delete catchRawValues?.fishCondition
 
     const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
       catchRawValues,
@@ -136,6 +161,7 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
     let createdExistingMarksResponse = []
     let createdMarkAppliedResponse = []
     let createdGeneticSamplingDataResponse = []
+    let createdCatchFishConditionResponse = []
 
     if (existingMarks?.length > 0) {
       const existingMarksPayload = existingMarks.map((markObj: any) => {
@@ -214,20 +240,35 @@ const createCatchRaw = async (catchRawValues: Record<string, any>) => {
         })
       )
     }
+    if (catchFishCondition.length > 0) {
+      let catchFishConditionPayload = [] as any
+      catchFishConditionPayload = catchFishCondition.map(
+        (fishCondition: string) => {
+          return {
+            catchRawId: createdCatchRaw.id,
+            fishConditionId: fishCondition,
+          }
+        }
+      )
+      createdCatchFishConditionResponse = await postCatchFishCondition(
+        catchFishConditionPayload
+      )
+    }
 
     return {
       createdCatchRawResponse: createdCatchRaw,
       createdMarkAppliedResponse,
       createdExistingMarksResponse,
       createdGeneticSamplingDataResponse,
+      createdCatchFishConditionResponse,
     }
   } catch (error) {
     console.log('error', error)
     console.log('err', catchRawValues)
-    return {
+    throw error({
       catchRawValues,
       error,
-    }
+    })
   }
 }
 
@@ -246,13 +287,13 @@ async function postCatchRaw(catchRawValues): Promise<
     if (Array.isArray(catchRawValues)) {
       const results = await Promise.all(
         catchRawValues?.map(async catchRawValue => {
-          const result = createCatchRaw(catchRawValue)
+          const result = await createCatchRaw(catchRawValue)
           return result
         })
       )
       return results
     } else if (typeof catchRawValues === 'object') {
-      const result = createCatchRaw(catchRawValues)
+      const result = await createCatchRaw(catchRawValues)
       return result
     }
   } catch (error) {
