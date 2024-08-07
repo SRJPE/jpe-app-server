@@ -12,7 +12,7 @@ import fishMeasureProtocolRouter from './fishMeasureProtocol'
 import hatcheryInfoRouter from './hatcheryInfo'
 import permitInfoRouter from './permitInfo'
 import programPersonnelTeamRouter from './programPersonnelTeam'
-
+import reportRouter from './reports'
 
 const mainRouter = express.Router()
 
@@ -31,5 +31,6 @@ hatcheryInfoRouter(mainRouter)
 permitInfoRouter(mainRouter)
 releaseSiteRouter(mainRouter)
 programPersonnelTeamRouter(mainRouter)
+reportRouter(mainRouter)
 
 export default mainRouter
