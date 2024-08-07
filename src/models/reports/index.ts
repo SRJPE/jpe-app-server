@@ -69,4 +69,4 @@ async function getBiWeeklyPassageSummary(
   }
 }
 
-export { getBiWeeklyPassageSummary, getReportMetaData }
+export { getBiWeeklyPassageSummary }
