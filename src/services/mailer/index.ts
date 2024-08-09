@@ -17,10 +17,16 @@ export const emailCredentials = {
   },
 }
 
-export const getFileContentFromPath = async (filePath: string) => {
-  let content = await fs.readFile(filePath)
-  // let content = await fs.readFile(path.resolve(__dirname, filePath))
-  return content
+export const getFileContentFromPath = async (
+  filePath: string
+): Promise<Buffer> => {
+  try {
+    const content = await fs.readFile(filePath)
+    return content
+  } catch (error) {
+    console.error(`Error reading file from path ${filePath}:`, error)
+    throw error
+  }
 }
 
 export const testFunc = async (
@@ -180,6 +186,7 @@ export const sendEmail = async ({
     ...(bcc && { bcc: bcc }),
     ...(attachments && { attachments: attachments }),
   })
+  console.log('🚀 ~ info:', info)
 
   return info
 }
