@@ -1,13 +1,9 @@
 import db from '../../db'
-import { getProgramCatchRawRecords } from '../catchRaw'
-import { getPersonnel } from '../personnel'
-import { getPersonnelPrograms } from '../program'
-import { getRelease } from '../release'
-import { getProgramTrapVisits } from '../trapVisit'
+import { CatchRaw, TrapVisit } from '../../interfaces'
 
 const { knex } = db
 
-async function getReportMetaData(programId: string): Promise<any> {
+async function getReportMetadata(programId: string): Promise<any> {
   try {
     //get associated program and personnel lead info
     const program = await knex<any>('program')
@@ -32,37 +28,69 @@ async function getReportMetaData(programId: string): Promise<any> {
   }
 }
 
+async function getBiWeeklyPassageSummaryRaw(programId: string): Promise<any> {
+  try {
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    const trapVisits = await knex<TrapVisit>('trapVisit')
+      .select('*')
+      .where('programId', programId)
+      .andWhere('trap_visit_time_end', '>=', twoWeeksAgo)
+
+    const trapVisitIds = trapVisits.map((trapVisit) => trapVisit.id)
+    const [environmentalBiWeekly, catchBiWeekly] = await Promise.all([
+      knex<any>('trapVisitEnvironmental')
+        .select('*')
+        .whereIn('trapVisitId', trapVisitIds),
+
+      knex<CatchRaw>('catchRaw')
+        .select('*')
+        .whereIn('trapVisitId', trapVisitIds),
+    ])
+    const releaseIds = catchBiWeekly
+      .filter((catchRaw) => catchRaw.releaseId)
+      .map((catchRaw) => catchRaw.releaseId)
+
+    const releaseBiWeekly = await knex('release')
+      .select('*')
+      .whereIn('id', releaseIds)
+    const payload = {
+      trapVisits,
+      catchBiWeekly,
+      environmentalBiWeekly,
+      releaseIds,
+      releaseBiWeekly,
+    }
+
+    return payload
+  } catch (error) {
+    throw error
+  }
+}
+
 // get Bi-weekly Passage Summary Report Data
-async function getBiWeeklyPassageSummary(
-  programId: string
-  // personnelId: string
-): Promise<any> {
+async function getBiWeeklyPassageSummary(programId: string): Promise<any> {
   try {
     // get associated program, personnel lead and funding agency info
-    const { program, personnelLead, fundingAgency } = await getReportMetaData(
+    const { program, personnelLead, fundingAgency } = await getReportMetadata(
       programId
     )
-
-    //programRunDesignationMethod depends on catchRaw
-
-    //get Data for Historical Mean Cumulative Passage
-    // const cumulativePassage = getHistoricalMeanCumulativePassage()
-
-    // get Data for Passage Estimates (need to change these to use program ID and get BiWeekly Data)
-
-    // const catchBiWeekly = await getProgramCatchRawRecords(programId)
-    // const environmentalBiWeekly = await getProgramTrapVisits(programId)
-    // const releaseBiWeekly = await getRelease(programId) //needs to be changed to get release data for bi-weekly
+    //get raw data needed for table calculations
+    const {
+      trapVisits,
+      catchBiWeekly,
+      environmentalBiWeekly,
+      releaseBiWeekly,
+    } = await getBiWeeklyPassageSummaryRaw(programId)
 
     return {
       program,
       personnelLead,
       fundingAgency,
-      // cumulativePassage,
-      // catchBiWeekly,
-      // environmentalBiWeekly,
-      // releaseBiWeekly,
-      // passageEstimates,
+      trapVisits,
+      catchBiWeekly,
+      environmentalBiWeekly,
+      releaseBiWeekly,
     }
   } catch (error) {
     throw error
