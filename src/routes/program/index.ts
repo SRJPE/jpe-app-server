@@ -24,18 +24,6 @@ export default (mainRouter: Router) => {
     }
   })
 
-  //bi-weekly passage summary report
-  programRouter.get('/biweeklyPassageSummary/:id', async (req, res) => {
-    try {
-      const { id } = req.params
-      const biweeklyPassageSummaryReport = await getBiWeeklyPassageSummary(id)
-      res.status(200).send(biweeklyPassageSummaryReport)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
-
   programRouter.post('/', async (req, res) => {
     try {
       const programValues = req.body
