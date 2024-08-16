@@ -59,7 +59,8 @@ passport.use(bearerStrategy)
 const port = process.env.PORT || 8000
 
 app.use(cors())
-app.use(express.json() as RequestHandler)
+app.use(express.json({ limit: '50mb' }) as RequestHandler)
+app.use(express.urlencoded({ limit: '50mb' }))
 app.use('/', routes)
 
 app.listen(port, (err?: Error) => {

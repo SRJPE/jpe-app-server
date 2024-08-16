@@ -102,19 +102,38 @@ async function getProgramTrapVisits(programId: number | string) {
   }
 }
 
+const postTrapVisit = async (trapVisit: Record<string, any>) => {
+  try {
+    if (Array.isArray(trapVisit)) {
+      const results = await Promise.all(
+        trapVisit.map(async trapVisitValue => {
+          const result = createTrapVisit(trapVisitValue)
+          return result
+        })
+      )
+      return results
+    } else if (typeof trapVisit === 'object') {
+      const result = createTrapVisit(trapVisit)
+      return result
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 // post trapVisit - admin only route
 // trapVisitValues: Object representing 1 trap visit
-async function postTrapVisit(trapVisitValues): Promise<{
+async function createTrapVisit(trapVisitValues): Promise<{
   createdTrapVisitResponse: Array<TrapVisit>
   createdTrapVisitCrewResponse: Array<TrapVisitCrew>
 }> {
   try {
-    trapVisitValues.trapVisitTimeStart = new Date(
-      trapVisitValues.trapVisitTimeStart
-    )
-    trapVisitValues.trapVisitTimeEnd = new Date(
-      trapVisitValues.trapVisitTimeEnd
-    )
+    trapVisitValues.trapVisitTimeStart = trapVisitValues.trapVisitTimeStart
+      ? new Date(trapVisitValues.trapVisitTimeStart)
+      : null
+    trapVisitValues.trapVisitTimeEnd = trapVisitValues.trapVisitTimeEnd
+      ? new Date(trapVisitValues.trapVisitTimeEnd)
+      : null
     const trapVisitCrew = trapVisitValues.crew
     delete trapVisitValues.crew
 
@@ -123,6 +142,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
 
     const trapVisitEnvironmental = trapVisitValues.trapVisitEnvironmental
     delete trapVisitValues.trapVisitEnvironmental
+    delete trapVisitValues.fieldsheetPage
 
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
@@ -141,7 +161,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
       trapCoordinatesPayload
     )
     // insert trapVisitEnvironmental
-    const trapVisitEnvironmentalPayload = trapVisitEnvironmental.map(
+    const trapVisitEnvironmentalPayload = trapVisitEnvironmental?.map(
       measureObject => {
         return {
           trapVisitId: createdTrapVisit.id,
