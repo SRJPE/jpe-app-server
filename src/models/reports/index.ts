@@ -31,7 +31,7 @@ async function getReportMetadata(programId: string): Promise<any> {
 async function getBiWeeklyPassageSummaryRaw(programId: string): Promise<any> {
   try {
     const twoWeeksAgo = new Date()
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 54) //change back to 14 after testing
     const trapVisits = await knex<TrapVisit>('trapVisit')
       .select('*')
       .where('programId', programId)
