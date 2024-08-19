@@ -29,10 +29,11 @@ export const getFileContentFromPath = async (
   }
 }
 
-export const testFunc = async (
+export const prepareBiWeeklyReportEmailForSend = async (
   to: string,
   subject: string,
-  filePath: string
+  filePath: string,
+  isScheduled: boolean
 ) => {
   const filePath2: string =
     '/Users/benpintel/Library/Developer/CoreSimulator/Devices/8EA30276-B40B-4D98-8CE9-6022794D2B75/data/Containers/Data/Application/9C4D1E7C-BFA2-4F68-8565-BB9DFA427F1C/Documents/ExponentExperienceData/@hunterh/rst-pilot-app/MyWordDocument175e77526bc.docx'

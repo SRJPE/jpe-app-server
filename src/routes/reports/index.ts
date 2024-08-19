@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { getBiWeeklyPassageSummary } from '../../models/reports'
-import { testFunc } from '../../services/mailer'
+import { prepareBiWeeklyReportEmailForSend } from '../../services/mailer'
 const reportsRouter = Router({ mergeParams: true })
 
 export default (mainRouter: Router) => {
@@ -25,13 +25,17 @@ export default (mainRouter: Router) => {
         req.body ? req.body : 'no body'
       )
 
-      const { to, subject, filePath } = req.body
+      const { to, subject, filePath, isScheduled } = req.body
       // const biweeklyPassageSummaryReportEmailResponse = await testFunc()
-      const biweeklyPassageSummaryReportEmailResponse = await testFunc(
-        to,
-        subject,
-        filePath
-      )
+      const biweeklyPassageSummaryReportEmailResponse =
+        await prepareBiWeeklyReportEmailForSend(
+          to,
+          subject,
+          filePath,
+          isScheduled
+        )
+
+      //need to create a flag to say it should be automated
 
       res.status(200).send(biweeklyPassageSummaryReportEmailResponse)
     } catch (error) {
