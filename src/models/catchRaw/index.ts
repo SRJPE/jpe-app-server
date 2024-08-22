@@ -276,10 +276,12 @@ async function putCatchRaw(
     if (catchRawObject.createdMarkAppliedResponse) {
       updatedMarkApplied = await Promise.all(
         catchRawObject.createdMarkAppliedResponse.map(async (markApplied) => {
+          let id = markApplied.id
+          delete markApplied.id
           const updatedMarkAppliedRecord = await knex<MarkAppliedI>(
             'markApplied'
           )
-            .where('id', markApplied.id)
+            .where('id', id)
             .update(markApplied, ['*'])
           return updatedMarkAppliedRecord[0]
         })
@@ -292,8 +294,10 @@ async function putCatchRaw(
       updatedExistingMarks = await Promise.all(
         catchRawObject.createdExistingMarksResponse.map(
           async (existingMark) => {
+            let id = existingMark.id
+            delete existingMark.id
             await knex<ExistingMarksI>('existingMarks')
-              .where('id', existingMark.id)
+              .where('id', id)
               .update(existingMark, ['*'])
           }
         )
@@ -306,8 +310,10 @@ async function putCatchRaw(
       updatedGeneticSamplingData = await Promise.all(
         catchRawObject.createdGeneticSamplingDataResponse.map(
           async (geneticSample) => {
+            let id = geneticSample.id
+            delete geneticSample.id
             await knex<GeneticSamplingDataI>('geneticSamplingData')
-              .where('id', geneticSample.id)
+              .where('id', id)
               .update(geneticSample, ['*'])
           }
         )
@@ -317,8 +323,10 @@ async function putCatchRaw(
     let updatedRelease = null
 
     if (catchRawObject.releaseResponse) {
+      let id = catchRawObject.releaseResponse.id
+      delete catchRawObject.releaseResponse.id
       updatedRelease = await knex('release')
-        .where('id', catchRawObject.releaseResponse.id)
+        .where('id', id)
         .update(catchRawObject.releaseResponse, ['*'])
     }
 
