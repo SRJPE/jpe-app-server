@@ -2,7 +2,7 @@ import express, { RequestHandler } from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
 import routes from './routes'
-
+import 'isomorphic-fetch'
 import passport from 'passport'
 import { BearerStrategy } from 'passport-azure-ad'
 

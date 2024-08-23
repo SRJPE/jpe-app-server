@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { DeviceCodeCredential } from '@azure/identity'
+import 'isomorphic-fetch'
 import { Client } from '@microsoft/microsoft-graph-client'
 import { TokenCredentialAuthenticationProvider } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials'
 import {
