@@ -45,6 +45,7 @@ const getAllTrapVisitDropdowns = async () => {
     getListingUnitOptions(),
     getFrequencyOptions(),
     getFishConditions(),
+    getAllPrograms(),
   ]
   const keys = [
     'trapFunctionality',
@@ -67,6 +68,7 @@ const getAllTrapVisitDropdowns = async () => {
     'listingUnit',
     'frequency',
     'fishCondition',
+    'programs',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
@@ -86,7 +88,7 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
     // const programs = await getPersonnelPrograms(personnelId)
     const programs = await getAllPrograms()
-    const programIds = programs.map(program => program.programId).sort()
+    const programIds = programs.map((program) => program.programId).sort()
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
@@ -108,10 +110,10 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
   }
 }
 
-const getDefaultCrewMembers = async programIds => {
+const getDefaultCrewMembers = async (programIds) => {
   try {
     const crew = await Promise.all(
-      programIds.map(async programId => {
+      programIds.map(async (programId) => {
         let crew = await knex<any>('programPersonnelTeam')
           .select('*')
           .join('personnel', 'personnel.id', 'programPersonnelTeam.personnelId')
