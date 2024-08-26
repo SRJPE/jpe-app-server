@@ -7,11 +7,15 @@ import {
   Program,
   TrapLocations,
 } from '../../interfaces'
-import { postFishMeasureProtocol } from '../fishMeasureProtocol'
-import { postHatcheryInfo } from '../hatcheryInfo'
-import { postPermitInfo } from '../permitInfo'
+import {
+  getFishMeasureProtocol,
+  postFishMeasureProtocol,
+} from '../fishMeasureProtocol'
+import { getHatcheryInfo, postHatcheryInfo } from '../hatcheryInfo'
+import { getProgramPermits, postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
-import { postTrapLocations } from '../trapLocations'
+import { getProgramPersonnelTeam } from '../programPersonnelTeam'
+import { getProgramTrapLocations, postTrapLocations } from '../trapLocations'
 
 const { knex } = db
 
@@ -75,7 +79,7 @@ async function postProgram(programValues): Promise<{
     // ===== trapLocation: // =====
     if (trappingSites && trappingSites.length > 0) {
       const trappingSitesPayload: TrapLocations = trappingSites.map(
-        trappingSite => {
+        (trappingSite) => {
           return {
             programId: createdProgramId,
             ...trappingSite,
@@ -123,7 +127,7 @@ async function postProgram(programValues): Promise<{
     // ===== fishMeasureProtocol: Trapping protocol // =====
     if (trappingProtocols && trappingProtocols.length > 0) {
       const fishMeasureProtocolPayload: FishMeasureProtocol =
-        trappingProtocols.map(protocolObj => {
+        trappingProtocols.map((protocolObj) => {
           return {
             programId: createdProgramId,
             ...protocolObj,
@@ -163,7 +167,29 @@ async function postProgram(programValues): Promise<{
     throw error
   }
 }
+async function getAllProgramRelatedContent(id: string | number): Promise<any> {
+  try {
+    const programMetaData = await knex<any>('program')
+      .where('program.id', id)
+      .select('*')
+    const trappingSites = await getProgramTrapLocations(id)
+    const personnel = await getProgramPersonnelTeam(id)
+    const hatcheryInfo = await getHatcheryInfo(id)
+    const fishMeasureProtocol = await getFishMeasureProtocol(id)
+    const permitInformation = await getProgramPermits(id)
 
+    return {
+      programMetaData,
+      trappingSites,
+      personnel,
+      hatcheryInfo,
+      fishMeasureProtocol,
+      permitInformation,
+    }
+  } catch (error) {
+    throw error
+  }
+}
 async function updateProgram({ id, updatedValues }): Promise<any> {
   try {
     const updatedProgramResponse = await knex<any>('program')
@@ -175,4 +201,10 @@ async function updateProgram({ id, updatedValues }): Promise<any> {
   }
 }
 
-export { getPersonnelPrograms, getAllPrograms, postProgram, updateProgram }
+export {
+  getPersonnelPrograms,
+  getAllPrograms,
+  postProgram,
+  updateProgram,
+  getAllProgramRelatedContent,
+}
