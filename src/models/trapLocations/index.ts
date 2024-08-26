@@ -7,12 +7,12 @@ const { knex } = db
 // get trap locations for program
 async function getProgramTrapLocations(programId): Promise<TrapLocations[]> {
   try {
-    const programPermits = await knex<TrapLocations>('trapLocations')
+    const trapLocations = await knex<TrapLocations>('trapLocations')
       .where('trapLocations.programId', programId)
       .select('*')
       .orderBy('trapLocations.id')
 
-    return programPermits
+    return trapLocations
   } catch (error) {
     throw error
   }
