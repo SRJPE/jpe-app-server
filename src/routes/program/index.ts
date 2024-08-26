@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  getAllProgramRelatedContent,
   getPersonnelPrograms,
   postProgram,
   updateProgram,
@@ -18,6 +19,17 @@ export default (mainRouter: Router) => {
       const { id } = req.params
       const usersPrograms = await getPersonnelPrograms(id)
       res.status(200).send(usersPrograms)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+  // get all Information needed to create/edit a program
+  programRouter.get('/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const allProgramRelatedContent = await getAllProgramRelatedContent(id)
+      res.status(200).send(allProgramRelatedContent)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
