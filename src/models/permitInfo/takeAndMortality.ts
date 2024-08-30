@@ -3,6 +3,21 @@ import { TakeAndMortality } from '../../interfaces'
 
 const { knex } = db
 
+async function getPermitTakeAndMortality(
+  permitInfoId: string | number
+): Promise<TakeAndMortality[]> {
+  try {
+    const programPermits = await knex<TakeAndMortality>('takeAndMortality')
+      .where('takeAndMortality.programId', permitInfoId)
+      .select('*')
+      .orderBy('takeAndMortality.id')
+
+    return programPermits
+  } catch (error) {
+    throw error
+  }
+}
+
 async function postTakeAndMortality(
   takeAndMortality
 ): Promise<Array<TakeAndMortality>> {
@@ -17,4 +32,4 @@ async function postTakeAndMortality(
   }
 }
 
-export { postTakeAndMortality }
+export { getPermitTakeAndMortality, postTakeAndMortality }
