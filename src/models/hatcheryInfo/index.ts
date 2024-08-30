@@ -10,7 +10,7 @@ async function getHatcheryInfo(programId): Promise<HatcheryInfo[]> {
       .select('*')
       .where('program_id', programId)
 
-      return hatcheryInfo
+    return hatcheryInfo
   } catch (error) {
     throw error
   }
@@ -29,5 +29,19 @@ async function postHatcheryInfo(hatcheryInfoValues): Promise<HatcheryInfo[]> {
     throw error
   }
 }
+async function updateHatcheryInfo({
+  id,
+  hatcheryInfoValues,
+}): Promise<HatcheryInfo[]> {
+  try {
+    const createdHatcheryInfo = await knex<HatcheryInfo>('hatcheryInfo')
+      .where('id', id)
+      .update(hatcheryInfoValues, ['*'])
 
-export {getHatcheryInfo, postHatcheryInfo }
+    return createdHatcheryInfo[0]
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getHatcheryInfo, postHatcheryInfo, updateHatcheryInfo }
