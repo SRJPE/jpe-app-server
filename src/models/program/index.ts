@@ -10,12 +10,26 @@ import {
 import {
   getFishMeasureProtocol,
   postFishMeasureProtocol,
+  updateFishMeasureProtocol,
 } from '../fishMeasureProtocol'
-import { getHatcheryInfo, postHatcheryInfo } from '../hatcheryInfo'
-import { getProgramPermits, postPermitInfo } from '../permitInfo'
-import { postPersonnel } from '../personnel'
+import {
+  getHatcheryInfo,
+  postHatcheryInfo,
+  updateHatcheryInfo,
+} from '../hatcheryInfo'
+import {
+  getProgramPermits,
+  postPermitInfo,
+  updatePermitInfo,
+} from '../permitInfo'
+import { getPermitTakeAndMortality } from '../permitInfo/takeAndMortality'
+import { postPersonnel, updatePersonnel } from '../personnel'
 import { getProgramPersonnelTeam } from '../programPersonnelTeam'
-import { getProgramTrapLocations, postTrapLocations } from '../trapLocations'
+import {
+  getProgramTrapLocations,
+  postTrapLocations,
+  updateTrapLocations,
+} from '../trapLocations'
 
 const { knex } = db
 
@@ -123,6 +137,7 @@ async function postProgram(programValues): Promise<{
         })
       )
     }
+    6
 
     // ===== fishMeasureProtocol: Trapping protocol // =====
     if (trappingProtocols && trappingProtocols.length > 0) {
@@ -177,7 +192,7 @@ async function getAllProgramRelatedContent(id: string | number): Promise<any> {
     const hatcheryInfo = await getHatcheryInfo(id)
     const fishMeasureProtocol = await getFishMeasureProtocol(id)
     const permitInformation = await getProgramPermits(id)
-
+    const permitTakeAndMortality = await getPermitTakeAndMortality(id)
     return {
       programMetaData,
       trappingSites,
@@ -190,13 +205,167 @@ async function getAllProgramRelatedContent(id: string | number): Promise<any> {
     throw error
   }
 }
-async function updateProgram({ id, updatedValues }): Promise<any> {
+async function updateProgram({ id, updatedValues }): Promise<PermitInfo> {
   try {
-    const updatedProgramResponse = await knex<any>('program')
-      .where({ id })
-      .update(updatedValues, ['*'])
-    return updatedProgramResponse[0]
+    const {
+      metaData,
+      trappingSites,
+      crewMembers: personnelValues,
+      efficiencyTrialProtocols: hatcheryInfoValues,
+      trappingProtocols: fishMeasureProtocolValues,
+      permittingInformation: permitInfoValues,
+    } = updatedValues
+
+    /*
+    First needs to check if the value is already present
+    then if it is simply updateFishMeasureProtocol
+
+    if not, insert postFishMeasureProtocol
+
+    need to account for new lists of personnel, hatcheryInfo, fishMeasureProtocol, take and mortality
+      this can lead to new relations
+
+
+    */
+    // ===== metaData: // =====
+    const updatedPermitInfo = await knex<PermitInfo>('permitInfo')
+      .where('id', id)
+      .update(metaData, ['*'])
+    // ===== trapLocation: // =====
+
+    // ===== personnel & programPersonnel// =====
+    updatePersonnel({ id, personnelValues })
+    // ===== hatcheryInfo (efficiencyTrialProtocols): // =====
+    updateHatcheryInfo({ id, hatcheryInfoValues })
+    // ===== fishMeasureProtocol: Trapping protocol // =====
+    updateFishMeasureProtocol({ id, fishMeasureProtocolValues })
+    // ===== PermitInformation::: // =====
+    updatePermitInfo({ id, permitInfoValues })
+
+    //release
+    //take and mort
+
+    return updatedPermitInfo[0]
   } catch (error) {
+    throw error
+  }
+}
+
+async function upsertProgram({ id, updatedValues }): Promise<any> {
+  const {
+    metaData,
+    trappingSites,
+    crewMembers,
+    efficiencyTrialProtocols,
+    trappingProtocols,
+    permittingInformation,
+  } = updatedValues
+
+  const trx = await knex.transaction()
+
+  try {
+    // Update or insert metadata
+    let programId = id
+    if (programId) {
+      await trx<Program>('program').where('id', programId).update(metaData)
+    } else {
+      const [createdProgram] = await trx<Program>('program').insert(metaData, [
+        'id',
+      ])
+      programId = createdProgram.id
+    }
+
+    // Update or insert trapping sites
+    if (trappingSites && trappingSites.length > 0) {
+      await Promise.all(
+        trappingSites.map(async (site) => {
+          if (site.id) {
+            await trx<TrapLocations>('trapLocations')
+              .where('id', site.id)
+              .update(site)
+          } else {
+            await trx<TrapLocations>('trapLocations').insert({
+              ...site,
+              programId,
+            })
+          }
+        })
+      )
+    }
+
+    // Update or insert personnel
+    if (crewMembers && crewMembers.length > 0) {
+      await Promise.all(
+        crewMembers.map(async (member) => {
+          if (member.id) {
+            await trx<Personnel>('personnel')
+              .where('id', member.id)
+              .update(member)
+          } else {
+            await trx<Personnel>('personnel').insert({ ...member, programId })
+          }
+        })
+      )
+    }
+
+    // Update or insert hatchery info
+    if (efficiencyTrialProtocols && efficiencyTrialProtocols.length > 0) {
+      await Promise.all(
+        efficiencyTrialProtocols.map(async (protocol) => {
+          if (protocol.id) {
+            await trx<HatcheryInfo>('hatcheryInfo')
+              .where('id', protocol.id)
+              .update(protocol)
+          } else {
+            await trx<HatcheryInfo>('hatcheryInfo').insert({
+              ...protocol,
+              programId,
+            })
+          }
+        })
+      )
+    }
+
+    // Update or insert fish measure protocol
+    if (trappingProtocols && trappingProtocols.length > 0) {
+      await Promise.all(
+        trappingProtocols.map(async (protocol) => {
+          if (protocol.id) {
+            await trx<FishMeasureProtocol>('fishMeasureProtocol')
+              .where('id', protocol.id)
+              .update(protocol)
+          } else {
+            await trx<FishMeasureProtocol>('fishMeasureProtocol').insert({
+              ...protocol,
+              programId,
+            })
+          }
+        })
+      )
+    }
+
+    // Update or insert permit information
+    if (permittingInformation && permittingInformation.length > 0) {
+      await Promise.all(
+        permittingInformation.map(async (info) => {
+          if (info.id) {
+            await trx<PermitInfo>('permitInfo')
+              .where('id', info.id)
+              .update(info)
+          } else {
+            await trx<PermitInfo>('permitInfo').insert({ ...info, programId })
+          }
+        })
+      )
+    }
+
+    // Commit transaction
+    await trx.commit()
+
+    return { success: true, programId }
+  } catch (error) {
+    // Rollback transaction
+    await trx.rollback()
     throw error
   }
 }
@@ -206,5 +375,6 @@ export {
   getAllPrograms,
   postProgram,
   updateProgram,
+  upsertProgram,
   getAllProgramRelatedContent,
 }
