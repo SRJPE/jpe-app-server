@@ -31,5 +31,22 @@ async function postTakeAndMortality(
     throw error
   }
 }
+async function updateTakeAndMortality(
+  takeAndMortality
+): Promise<Array<TakeAndMortality>> {
+  try {
+    const createdTakeAndMortalityResponse = await knex<TakeAndMortality>(
+      'takeAndMortality'
+    ).insert(takeAndMortality, ['*'])
 
-export { getPermitTakeAndMortality, postTakeAndMortality }
+    return createdTakeAndMortalityResponse
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  getPermitTakeAndMortality,
+  postTakeAndMortality,
+  updateTakeAndMortality,
+}
