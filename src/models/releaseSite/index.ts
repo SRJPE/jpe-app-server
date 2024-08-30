@@ -6,8 +6,7 @@ const { knex } = db
 // get all release sites
 async function getAllReleaseSites(): Promise<ReleaseSite[]> {
   try {
-    const releaseSites = await knex<ReleaseSite>('releaseSite')
-      .select('*')
+    const releaseSites = await knex<ReleaseSite>('releaseSite').select('*')
 
     return releaseSites
   } catch (error) {
@@ -16,18 +15,31 @@ async function getAllReleaseSites(): Promise<ReleaseSite[]> {
 }
 
 // post release site
-async function postReleaseSite(
-  releaseSiteValues
-): Promise<ReleaseSite[]> {
+async function postReleaseSite(releaseSiteValues): Promise<ReleaseSite[]> {
   try {
-    const createdReleaseSite = await knex<ReleaseSite>(
-      'releaseSite'
-    ).insert(releaseSiteValues, ['*'])
+    const createdReleaseSite = await knex<ReleaseSite>('releaseSite').insert(
+      releaseSiteValues,
+      ['*']
+    )
 
     return createdReleaseSite
   } catch (error) {
     throw error
   }
 }
+async function updateReleaseSites({
+  id,
+  releaseSiteValues,
+}): Promise<ReleaseSite[]> {
+  try {
+    const createdReleaseSite = await knex<ReleaseSite>('releaseSite')
+      .where('id', id)
+      .update(releaseSiteValues, ['*'])
 
-export { getAllReleaseSites, postReleaseSite }
+    return createdReleaseSite[0]
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getAllReleaseSites, postReleaseSite, updateReleaseSites }
