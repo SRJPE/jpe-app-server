@@ -23,8 +23,27 @@ async function getRelease(releaseId: number | string): Promise<Release> {
   }
 }
 
+const postRelease = async (release: Record<string, any>) => {
+  try {
+    if (Array.isArray(release)) {
+      const results = await Promise.all(
+        release.map(async releaseValue => {
+          const result = createRelease(releaseValue)
+          return result
+        })
+      )
+      return results
+    } else if (typeof release === 'object') {
+      const result = createRelease(release)
+      return result
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 // post release - admin only route
-async function postRelease(releaseValues): Promise<{
+async function createRelease(releaseValues): Promise<{
   createdReleaseResponse: Array<Release>
   createdReleaseCrewResponse: Array<ReleaseCrew>
   createdReleaseMarksResponse: Array<ReleaseMarks>
