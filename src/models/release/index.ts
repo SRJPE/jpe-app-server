@@ -54,8 +54,12 @@ async function createRelease(releaseValues): Promise<{
     const releaseCrew = releaseValues.releaseCrew || []
     delete releaseValues.releaseCrew
 
-    releaseValues.releasedAt = new Date(releaseValues.releasedAt)
-    releaseValues.markedAt = new Date(releaseValues.markedAt)
+    releaseValues.releasedAt = releaseValues.releasedAt
+      ? new Date(releaseValues.releasedAt)
+      : null
+    releaseValues.markedAt = releaseValues.markedAt
+      ? new Date(releaseValues.markedAt)
+      : null
 
     const createdReleaseResponse = await knex<Release>('release').insert(
       releaseValues,
