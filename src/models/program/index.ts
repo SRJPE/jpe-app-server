@@ -293,6 +293,8 @@ async function upsertProgram({ id, updatedValues }): Promise<any> {
       )
     }
 
+    // add releaseSite related to trapLocations here
+
     // Update or insert personnel
     if (crewMembers && crewMembers.length > 0) {
       await Promise.all(
@@ -346,18 +348,48 @@ async function upsertProgram({ id, updatedValues }): Promise<any> {
 
     // Update or insert permit information
     if (permittingInformation && permittingInformation.length > 0) {
+      // await updatePermitInfo({ id: programId, permitInfoValues: permittingInformation })
       await Promise.all(
         permittingInformation.map(async (info) => {
+          let createdPermitInfo
           if (info.id) {
-            await trx<PermitInfo>('permitInfo')
+            createdPermitInfo = await trx<PermitInfo>('permitInfo')
               .where('id', info.id)
               .update(info)
           } else {
-            await trx<PermitInfo>('permitInfo').insert({ ...info, programId })
+            createdPermitInfo = await trx<PermitInfo>('permitInfo').insert({
+              ...info,
+              programId,
+            })
+          }
+
+          // permittingInformation
+
+          // Update or insert take and mortality
+          if (
+            info.expectedTakeAndMortality &&
+            info.expectedTakeAndMortality.length > 0
+          ) {
+            await Promise.all(
+              info.expectedTakeAndMortality.map(async (takeAndMortality) => {
+                if (takeAndMortality.id) {
+                  await trx<PermitInfo>('permitInfo')
+                    .where('id', takeAndMortality.id)
+                    .update(takeAndMortality)
+                } else {
+                  await trx<PermitInfo>('permitInfo').insert({
+                    ...takeAndMortality,
+                    programId,
+                  })
+                }
+              })
+            )
           }
         })
       )
     }
+
+    //add the take and mortality related to permit information.
 
     // Commit transaction
     await trx.commit()
