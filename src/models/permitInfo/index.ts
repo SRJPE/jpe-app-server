@@ -72,5 +72,57 @@ async function updatePermitInfo({ id, permitInfoValues }): Promise<PermitInfo> {
     throw error
   }
 }
+async function upsertPermitInfo(permitInfoValues): Promise<PermitInfo> {
+  try {
+    const {
+      id,
+      programId,
+      streamName,
+      permitStartDate,
+      permitEndDate,
+      flowThreshold,
+      temperatureThreshold,
+      frequencySamplingInclementWeather,
+      expectedTakeAndMortality,
+    } = permitInfoValues
+
+    const permitInfoPayload = {
+      programId,
+      streamName,
+      permitStartDate,
+      permitEndDate,
+      flowThreshold,
+      temperatureThreshold,
+      frequencySamplingInclementWeather,
+    }
+    let permitInfoResponse
+    if (permitInfoValues.id) {
+      permitInfoResponse = await knex<PermitInfo>('permitInfo')
+        .where('id', id)
+        .update(permitInfoValues, ['*'])
+    } else {
+      permitInfoResponse = await knex<PermitInfo>('permitInfo').insert({
+        ...permitInfoPayload,
+        programId,
+      })
+    }
+
+    if (permitInfoResponse) {
+      const expectedTakeAndMortalityPayload = expectedTakeAndMortality.map(
+        (entry: any) => {
+          return {
+            permitInfoId: permitInfoResponse[0]?.id,
+            ...entry,
+          }
+        }
+      )
+
+      await postTakeAndMortality(expectedTakeAndMortalityPayload)
+    }
+    return permitInfoResponse[0]
+  } catch (error) {
+    throw error
+  }
+}
 
 export { getProgramPermits, postPermitInfo, updatePermitInfo }
