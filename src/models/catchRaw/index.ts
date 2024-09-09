@@ -66,7 +66,7 @@ async function getProgramCatchRawRecords(
 
     // Rest of the code...
 
-    const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
+    const catchRawIds = catchRaws.map((catchRaw) => catchRaw.id)
 
     const [
       markAppliedData,
@@ -89,22 +89,22 @@ async function getProgramCatchRawRecords(
     ])
 
     const releaseIds = catchRaws
-      .filter(catchRaw => catchRaw.releaseId)
-      .map(catchRaw => catchRaw.releaseId)
+      .filter((catchRaw) => catchRaw.releaseId)
+      .map((catchRaw) => catchRaw.releaseId)
 
     const releaseData = await knex('release')
       .select('*')
       .whereIn('id', releaseIds)
 
-    const payload = catchRaws.map(catchRaw => {
+    const payload = catchRaws.map((catchRaw) => {
       const markApplied = markAppliedData.filter(
-        row => row.catchRawId === catchRaw.id
+        (row) => row.catchRawId === catchRaw.id
       )
       const existingMarks = existingMarksData.filter(
-        row => row.catchRawId === catchRaw.id
+        (row) => row.catchRawId === catchRaw.id
       )
       const geneticSample = geneticSampleData.filter(
-        row => row.catchRawId === catchRaw.id
+        (row) => row.catchRawId === catchRaw.id
       )
       const fishCondition = catchFishCondition.filter(
         row => row.catchRawId === catchRaw.id
@@ -304,13 +304,86 @@ async function postCatchRaw(catchRawValues): Promise<
 // PUT trapVisit - admin only route
 async function putCatchRaw(
   catchRawId: string,
-  catchRawValues: Record<string, any>
+  catchRawObject: Record<string, any>
 ): Promise<CatchRaw> {
   try {
+    delete catchRawObject.createdCatchRawResponse.id
     const updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
       .where('id', catchRawId)
-      .update(catchRawValues, ['*'])
-    return updatedCatchRawRecord[0]
+      .update(catchRawObject.createdCatchRawResponse, ['*'])
+
+    let updatedMarkApplied = []
+
+    if (catchRawObject.createdMarkAppliedResponse) {
+      updatedMarkApplied = await Promise.all(
+        catchRawObject.createdMarkAppliedResponse.map(async (markApplied) => {
+          let id = markApplied.id
+          delete markApplied.id
+          const updatedMarkAppliedRecord = await knex<MarkAppliedI>(
+            'markApplied'
+          )
+            .where('id', id)
+            .update(markApplied, ['*'])
+          return updatedMarkAppliedRecord[0]
+        })
+      )
+    }
+
+    let updatedExistingMarks = []
+
+    if (catchRawObject.createdExistingMarksResponse) {
+      updatedExistingMarks = await Promise.all(
+        catchRawObject.createdExistingMarksResponse.map(
+          async (existingMark) => {
+            let id = existingMark.id
+            delete existingMark.id
+            await knex<ExistingMarksI>('existingMarks')
+              .where('id', id)
+              .update(existingMark, ['*'])
+          }
+        )
+      )
+    }
+
+    let updatedGeneticSamplingData = []
+
+    if (catchRawObject.createdGeneticSamplingDataResponse) {
+      updatedGeneticSamplingData = await Promise.all(
+        catchRawObject.createdGeneticSamplingDataResponse.map(
+          async (geneticSample) => {
+            let id = geneticSample.id
+            delete geneticSample.id
+            await knex<GeneticSamplingDataI>('geneticSamplingData')
+              .where('id', id)
+              .update(geneticSample, ['*'])
+          }
+        )
+      )
+    }
+
+    let updatedRelease = null
+
+    if (catchRawObject.releaseResponse) {
+      let id = catchRawObject.releaseResponse.id
+      delete catchRawObject.releaseResponse.id
+      updatedRelease = await knex('release')
+        .where('id', id)
+        .update(catchRawObject.releaseResponse, ['*'])
+    }
+
+    return {
+      createdCatchRawResponse: updatedCatchRawRecord[0],
+      createdMarkAppliedResponse: updatedMarkApplied.length
+        ? updatedMarkApplied
+        : null,
+      createdExistingMarksResponse: updatedExistingMarks.length
+        ? updatedExistingMarks
+        : null,
+      createdGeneticSamplingDataResponse: updatedGeneticSamplingData.length
+        ? updatedGeneticSamplingData
+        : null,
+      releaseResponse: updatedRelease || null,
+    }
   } catch (error) {
     throw error
   }
