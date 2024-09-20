@@ -7,32 +7,37 @@ import { postTrapVisitEnvironmental } from './trapVisitEnvironmental'
 const { knex } = db
 
 // get trap visit
-async function getTrapVisit(trapVisitId: number | string): Promise<TrapVisit> {
+async function getTrapVisit(trapVisitId: number | string): Promise<any> {
   try {
     const trapVisit = await knex<TrapVisit>('trapVisit')
       .select('*')
       .where('id', trapVisitId)
 
-    const crew = await knex<TrapVisit>('trapVisitCrew')
-      .select('*')
-      .where('trapVisitId', trapVisitId)
-      .join('personnel', 'personnel.id', 'trapVisitCrew.personnelId')
+    const [trapVisitEnvironmentalData, crewData, coordinatesData] =
+      await Promise.all([
+        knex<any>('trapVisitEnvironmental')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+        knex<any>('trapVisitCrew')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+        knex<any>('trapCoordinates')
+          .select('*')
+          .whereIn('trapVisitId', [trapVisitId]),
+      ])
 
-    const environmentalResponse = await knex<TrapVisit>(
-      'trapVisitEnvironmental'
-    )
-      .where('trapVisitId', trapVisitId)
-      .join('unit', 'unit.id', 'trapVisitEnvironmental.measureUnit')
-      .select(
-        'trapVisitEnvironmental.*',
-        'unit.definition as measureUnitDefinition'
-      )
+    const personnelIds = crewData.map(row => row.personnelId)
 
-    const environmental = keyBy(environmentalResponse, obj => {
-      return camelCase(obj.measureName)
-    })
-
-    return { ...trapVisit[0], crew, environmental }
+    return {
+      createdTrapVisitResponse: trapVisit[0],
+      createdTrapVisitCrewResponse: personnelIds,
+      createdTrapCoordinatesResponse: coordinatesData.length
+        ? coordinatesData[0]
+        : null,
+      createdTrapVisitEnvironmentalResponse: trapVisitEnvironmentalData.length
+        ? trapVisitEnvironmentalData
+        : null,
+    }
   } catch (error) {
     throw error
   }
@@ -102,19 +107,38 @@ async function getProgramTrapVisits(programId: number | string) {
   }
 }
 
+const postTrapVisit = async (trapVisit: Record<string, any>) => {
+  try {
+    if (Array.isArray(trapVisit)) {
+      const results = await Promise.all(
+        trapVisit.map(async trapVisitValue => {
+          const result = createTrapVisit(trapVisitValue)
+          return result
+        })
+      )
+      return results
+    } else if (typeof trapVisit === 'object') {
+      const result = createTrapVisit(trapVisit)
+      return result
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 // post trapVisit - admin only route
 // trapVisitValues: Object representing 1 trap visit
-async function postTrapVisit(trapVisitValues): Promise<{
+async function createTrapVisit(trapVisitValues): Promise<{
   createdTrapVisitResponse: Array<TrapVisit>
   createdTrapVisitCrewResponse: Array<TrapVisitCrew>
 }> {
   try {
-    trapVisitValues.trapVisitTimeStart = new Date(
-      trapVisitValues.trapVisitTimeStart
-    )
-    trapVisitValues.trapVisitTimeEnd = new Date(
-      trapVisitValues.trapVisitTimeEnd
-    )
+    trapVisitValues.trapVisitTimeStart = trapVisitValues.trapVisitTimeStart
+      ? new Date(trapVisitValues.trapVisitTimeStart)
+      : null
+    trapVisitValues.trapVisitTimeEnd = trapVisitValues.trapVisitTimeEnd
+      ? new Date(trapVisitValues.trapVisitTimeEnd)
+      : null
     const trapVisitCrew = trapVisitValues.crew
     delete trapVisitValues.crew
 
@@ -123,6 +147,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
 
     const trapVisitEnvironmental = trapVisitValues.trapVisitEnvironmental
     delete trapVisitValues.trapVisitEnvironmental
+    delete trapVisitValues.fieldsheetPage
 
     const createdTrapVisitResponse = await knex<TrapVisit>('trapVisit').insert(
       trapVisitValues,
@@ -141,7 +166,7 @@ async function postTrapVisit(trapVisitValues): Promise<{
       trapCoordinatesPayload
     )
     // insert trapVisitEnvironmental
-    const trapVisitEnvironmentalPayload = trapVisitEnvironmental.map(
+    const trapVisitEnvironmentalPayload = trapVisitEnvironmental?.map(
       measureObject => {
         return {
           trapVisitId: createdTrapVisit.id,
@@ -177,56 +202,86 @@ async function postTrapVisit(trapVisitValues): Promise<{
   }
 }
 
+function replaceNAWithNull(obj) {
+  if (typeof obj !== 'object' || obj === null) {
+    return obj
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => replaceNAWithNull(item))
+  }
+
+  const newObj = {}
+  for (let key in obj) {
+    if (obj[key] === 'NA') {
+      newObj[key] = null
+    } else {
+      newObj[key] = replaceNAWithNull(obj[key])
+    }
+  }
+  return newObj
+}
+
 // PUT trapVisit - admin only route
 async function putTrapVisit(
   trapVisitId: string,
   trapVisitValues: Record<string, any>
 ): Promise<TrapVisit> {
+  const trapVisitValuesNoNull = replaceNAWithNull(trapVisitValues)
+
   try {
-    if (trapVisitValues.hasOwnProperty('crew')) {
+    if (trapVisitValuesNoNull.hasOwnProperty('createdTrapVisitCrewResponse')) {
       // delete all existing crew from trap visit
       await knex<TrapVisit>('trapVisitCrew')
         .where('trapVisitId', trapVisitId)
         .del()
 
       // insert new crew
-      const rowsToInsert = trapVisitValues.crew.map(personnelId => {
-        return {
-          personnelId,
-          trapVisitId,
-        }
-      })
+      const rowsToInsert =
+        trapVisitValuesNoNull.createdTrapVisitCrewResponse.map(personnelId => {
+          return {
+            personnelId,
+            trapVisitId,
+          }
+        })
       await knex<TrapVisit>('trapVisitCrew').insert(rowsToInsert, ['*'])
-      delete trapVisitValues.crew
+      delete trapVisitValuesNoNull.createdTrapVisitCrewResponse
     }
 
-    if (trapVisitValues.hasOwnProperty('environmental')) {
-      const measureNames = Object.values(trapVisitValues.environmental).map(
-        (measure: any) => measure.measureName
+    if (
+      trapVisitValuesNoNull.hasOwnProperty(
+        'createdTrapVisitEnvironmentalResponse'
       )
+    ) {
+      const measureNames = Object.values(
+        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
+      ).map((measure: any) => measure.measureName)
       // delete existing records for measures for trap visit
       await knex<TrapVisit>('trapVisitEnvironmental')
         .whereIn('measureName', measureNames)
         .andWhere('trapVisitId', trapVisitId)
         .del()
 
-      const rowsToInsert = Object.values(trapVisitValues.environmental).map(
-        (environmentalObject: any) => {
-          return {
-            ...environmentalObject,
-            trapVisitId,
-          }
+      trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse.forEach(
+        measure => {
+          delete measure.id
         }
       )
+
+      const rowsToInsert =
+        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
+
       await knex<TrapVisit>('trapVisitEnvironmental').insert(rowsToInsert, [
         '*',
       ])
-      delete trapVisitValues.environmental
+      delete trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
     }
+
+    delete trapVisitValuesNoNull.createdTrapVisitResponse.id
 
     await knex<TrapVisit>('trapVisit')
       .where('id', trapVisitId)
-      .update(trapVisitValues, ['*'])
+      .update(trapVisitValuesNoNull.createdTrapVisitResponse, ['*'])
 
     const updatedTrapVisit = await getTrapVisit(trapVisitId)
     return updatedTrapVisit

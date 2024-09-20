@@ -84,32 +84,42 @@ const getAllTrapVisitDropdowns = async () => {
 // for DEVELOPMENT, we will return all values
 const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
-    // const programs = await getPersonnelPrograms(personnelId)
-    const programs = await getAllPrograms()
-    const programIds = programs.map((program) => program.programId).sort()
+    const programs = await getPersonnelPrograms(personnelId)
+
+    // const programs = await getAllPrograms()
+    const programIds = programs.map(program => program.programId).sort()
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
       .whereIn('programId', programIds)
-    const releaseSites = await knex<any>('releaseSite').select('*')
+
+    const trapLocationIds = trapLocations.map(trapLocation => trapLocation.id)
+
+    const releaseSites = await knex<any>('releaseSite')
+      .join('trapLocations', 'trapLocations.id', 'releaseSite.trapLocationsId')
+      .select('releaseSite.*', 'trapLocations.programId')
+      .whereIn('trapLocationsId', trapLocationIds)
 
     const crewMembers = await getDefaultCrewMembers(programIds)
+
+    const trapVisitCrew = await knex<any>('trapVisitCrew').select('*')
 
     return {
       programs,
       trapLocations,
       releaseSites,
       crewMembers,
+      trapVisitCrew,
     }
   } catch (error) {
     throw error
   }
 }
 
-const getDefaultCrewMembers = async (programIds) => {
+const getDefaultCrewMembers = async programIds => {
   try {
     const crew = await Promise.all(
-      programIds.map(async (programId) => {
+      programIds.map(async programId => {
         let crew = await knex<any>('programPersonnelTeam')
           .select('*')
           .join('personnel', 'personnel.id', 'programPersonnelTeam.personnelId')

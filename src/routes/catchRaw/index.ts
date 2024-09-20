@@ -65,8 +65,8 @@ export default (mainRouter: Router) => {
   catchRawRouter.put('/:catchRawId', async (req, res) => {
     try {
       const { catchRawId } = req.params
-      const catchRawValues = req.body
-      const editedCatchRawRecord = await putCatchRaw(catchRawId, catchRawValues)
+      const catchRawObject= req.body
+      const editedCatchRawRecord = await putCatchRaw(catchRawId, catchRawObject)
       res.status(200).send(editedCatchRawRecord)
     } catch (error) {
       console.error(error)

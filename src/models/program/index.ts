@@ -18,11 +18,64 @@ const { knex } = db
 // get programs associated with personnel
 async function getPersonnelPrograms(personnelId: string): Promise<any> {
   try {
-    const programs = await knex<any>('programPersonnelTeam')
+    const programs = (await knex<any>('programPersonnelTeam')
       .join('program', 'program.id', 'programPersonnelTeam.programId')
       .where('programPersonnelTeam.personnelId', personnelId)
       .select('*')
-      .orderBy('program.id')
+      .orderBy('program.id')) as Array<any>
+
+    await Promise.all(
+      programs.map(async program => {
+        const [
+          trapLocationsData,
+          programPersonnelTeamData,
+          hatcheryInfoData,
+          fishMeasureProtocolData,
+        ] = await Promise.all([
+          knex<any>('trapLocations')
+            .where('programId', program.id)
+            .select('*')
+            .orderBy('id'),
+          knex<any>('programPersonnelTeam')
+            .join(
+              'personnel',
+              'personnel.id',
+              'programPersonnelTeam.personnelId'
+            )
+            .where('programId', program.id)
+            .select(
+              'personnel.id',
+              'personnel.firstName',
+              'personnel.lastName',
+              'personnel.email',
+              'personnel.role',
+              'personnel.agencyId'
+            )
+            .orderBy('id'),
+          knex<any>('hatcheryInfo')
+            .where('programId', program.id)
+            .select('*')
+            .orderBy('id'),
+          knex<any>('fishMeasureProtocol')
+            .where('programId', program.id)
+            .join('taxon', 'taxon.code', 'fishMeasureProtocol.species')
+            .join('lifeStage', 'lifeStage.id', 'fishMeasureProtocol.lifeStage')
+            .join('run', 'run.id', 'fishMeasureProtocol.run')
+            .select(
+              'taxon.commonname',
+              'lifeStage.definition as lifeStageName',
+              'run.definition as runName',
+              'fishMeasureProtocol.*'
+            )
+            .orderBy('id'),
+        ])
+
+        program['trappingSites'] = trapLocationsData
+        program['crewMembers'] = programPersonnelTeamData
+        program['hatcheryInfo'] = hatcheryInfoData
+        program['fishMeasureProtocol'] = fishMeasureProtocolData
+      })
+    )
     return programs
   } catch (error) {
     throw error

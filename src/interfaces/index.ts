@@ -22,7 +22,7 @@ export interface TrapVisit {
   rpmAtStop?: number
   coneDepth?: number
   inHalfConeConfiguration?: boolean
-  debrisVolumeLiters?: number
+  debrisVolumeGal?: number
   createdAt?: Date
   updatedAt?: Date
   qcCompleted?: boolean
@@ -117,6 +117,12 @@ export interface MarkAppliedCrewI {
   markAppliedId: number
 }
 
+export interface CatchFishConditionI {
+  id: number
+  catchRawId: number
+  fishConditionId: string
+}
+
 export interface Release {
   id: number
   programId: number
@@ -141,7 +147,7 @@ export interface ReleaseMarks {
   releaseId: number
   markType: number
   markColor: number
-  bodyPart: number
+  markPosition: number
 }
 export interface ReleaseCrew {
   id: number
