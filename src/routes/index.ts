@@ -15,6 +15,15 @@ import programPersonnelTeamRouter from './programPersonnelTeam'
 
 const mainRouter = express.Router()
 
+mainRouter.get('/api-version', async (req, res) => {
+  try {
+    res.status(200).send('1')
+  } catch (error) {
+    console.error(error)
+    res.status(400).send(error)
+  }
+})
+
 mainRouter.use('/', isAuthenticated)
 
 trapVisitRouter(mainRouter)
