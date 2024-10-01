@@ -88,14 +88,6 @@ async function getProgramCatchRawRecords(
         .whereIn('catchRawId', catchRawIds),
     ])
 
-    const releaseIds = catchRaws
-      .filter(catchRaw => catchRaw.releaseId)
-      .map(catchRaw => catchRaw.releaseId)
-
-    const releaseData = await knex('release')
-      .select('*')
-      .whereIn('id', releaseIds)
-
     const payload = catchRaws.map(catchRaw => {
       const markApplied = markAppliedData.filter(
         row => row.catchRawId === catchRaw.id
@@ -109,7 +101,6 @@ async function getProgramCatchRawRecords(
       const fishCondition = catchFishCondition.filter(
         row => row.catchRawId === catchRaw.id
       )
-      const release = releaseData.find(row => row.id === catchRaw.releaseId)
 
       return {
         createdCatchRawResponse: catchRaw,
@@ -123,7 +114,6 @@ async function getProgramCatchRawRecords(
         createdCatchFishConditionResponse: fishCondition.length
           ? fishCondition
           : null,
-        releaseResponse: release || null,
       }
     })
 
