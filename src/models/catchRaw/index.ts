@@ -66,8 +66,10 @@ async function getProgramCatchRawRecords(
 
     // Rest of the code...
 
+    // all catch records of a program
     const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
+    // all mark applied, existing marks, genetic sample, and fish condition records of program
     const [
       markAppliedData,
       existingMarksData,
@@ -88,6 +90,17 @@ async function getProgramCatchRawRecords(
         .whereIn('catchRawId', catchRawIds),
     ])
 
+    // all release ids that are found within the existing marks of a program
+    const releaseIds = existingMarksData
+      .filter(existingMark => existingMark.releaseId)
+      .map(existingMark => existingMark.releaseId)
+
+    // all releases for a program
+    const releaseData = await knex('release')
+      .select('*')
+      .whereIn('release.id', releaseIds)
+      .join('existingMarks', 'release.id', 'existingMarks.releaseId')
+
     const payload = catchRaws.map(catchRaw => {
       const markApplied = markAppliedData.filter(
         row => row.catchRawId === catchRaw.id
@@ -102,6 +115,8 @@ async function getProgramCatchRawRecords(
         row => row.catchRawId === catchRaw.id
       )
 
+      const release = releaseData.find(row => row.catchRawId === catchRaw.id)
+
       return {
         createdCatchRawResponse: catchRaw,
         createdMarkAppliedResponse: markApplied.length ? markApplied : null,
@@ -114,11 +129,13 @@ async function getProgramCatchRawRecords(
         createdCatchFishConditionResponse: fishCondition.length
           ? fishCondition
           : null,
+        releaseResponse: release || null,
       }
     })
 
     return payload
   } catch (error) {
+    console.log('e', error)
     throw error
   }
 }
