@@ -53,10 +53,11 @@ async function getProgramCatchRawRecords(
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
     let query = knex<CatchRaw>('catchRaw')
-      .select('*')
-      .where('programId', programId)
-      .andWhere('created_at', '>=', pastYear)
+      .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+      .where('catchRaw.programId', programId)
+      .andWhere('catchRaw.created_at', '>=', pastYear)
       .orderBy('catchRaw.id')
+      .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
 
     if (limit) {
       query = query.limit(limit)
