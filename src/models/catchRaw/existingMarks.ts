@@ -17,4 +17,21 @@ async function postExistingMarks(
   }
 }
 
-export { postExistingMarks }
+async function getProgramExistingMarks(
+  programId: number | string
+): Promise<Array<ExistingMarksI>> {
+  try {
+    const existingMarksResponse = await knex<ExistingMarksI>('existingMarks')
+      .select('*')
+      .where('existingMarks.programId', programId)
+      .join('release', 'release.id', 'existingMarks.releaseId')
+      .join('catchRaw', 'catchRaw.id', 'existingMarks.catchRawId')
+      .orderBy('existingMarks.id')
+
+    return existingMarksResponse
+  } catch (error) {
+    throw error
+  }
+}
+
+export { postExistingMarks, getProgramExistingMarks }
