@@ -17,6 +17,21 @@ async function getPersonnel(id: number | string): Promise<Personnel> {
   }
 }
 
+//GET all personnel
+async function getAllPersonnel(): Promise<Personnel[]> {
+  try {
+    const personnelRecords = await knex<Personnel>('personnel').select('*')
+    console.log(
+      '🚀 ~ file: index.ts:24 ~ getAllPersonnel ~ personnelRecords:',
+      personnelRecords
+    )
+
+    return personnelRecords
+  } catch (error) {
+    throw error
+  }
+}
+
 // GET
 async function getPersonnelbyAzureUid(
   azureUid: number | string
@@ -78,4 +93,10 @@ async function updatePersonnel({
   }
 }
 
-export { getPersonnel, getPersonnelbyAzureUid, postPersonnel, updatePersonnel }
+export {
+  getPersonnel,
+  getAllPersonnel,
+  getPersonnelbyAzureUid,
+  postPersonnel,
+  updatePersonnel,
+}

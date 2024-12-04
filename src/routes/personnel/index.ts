@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  getAllPersonnel,
   getPersonnel,
   postPersonnel,
   updatePersonnel,
@@ -10,6 +11,17 @@ const personnelRouter = Router({ mergeParams: true })
 
 export default (mainRouter: Router) => {
   mainRouter.use('/personnel', personnelRouter)
+
+  // GET
+  personnelRouter.get('/', async (req, res) => {
+    try {
+      const personnel = await getAllPersonnel()
+      res.status(200).send(personnel)
+    } catch (error) {
+      console.error(error)
+      res.status(400)
+    }
+  })
 
   // GET
   personnelRouter.get('/:id', async (req, res) => {
