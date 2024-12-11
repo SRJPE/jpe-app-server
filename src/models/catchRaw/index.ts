@@ -316,9 +316,18 @@ async function putCatchRaw(
 ): Promise<CatchRaw> {
   try {
     delete catchRawObject.createdCatchRawResponse.id
-    const updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
+    delete catchRawObject.createdCatchRawResponse.trapVisitTimeEnd
+    let updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
       .where('id', catchRawId)
       .update(catchRawObject.createdCatchRawResponse, ['*'])
+
+    // Perform a join using the updated record's data
+    if (updatedCatchRawRecord.length > 0) {
+      updatedCatchRawRecord = await knex('catchRaw')
+        .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+        .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
+        .where('catchRaw.id', updatedCatchRawRecord[0].id) // Use the updated record's ID
+    }
 
     let updatedMarkApplied = []
 
