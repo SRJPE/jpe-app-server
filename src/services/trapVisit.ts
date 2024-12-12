@@ -81,7 +81,6 @@ const getAllTrapVisitDropdowns = async () => {
 // NOTE: Production functionality should filter visit setup default values
 // by personnel Id of signed in user
 
-// for DEVELOPMENT, we will return all values
 const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
     const programs = await getPersonnelPrograms(personnelId)
@@ -104,14 +103,20 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
 
     const trapVisitCrew = await knex<any>('trapVisitCrew').select('*')
 
+    const permitInfo = await knex<any>('permitInfo')
+      .select('*')
+      .whereIn('programId', programIds)
+
     return {
       programs,
       trapLocations,
       releaseSites,
       crewMembers,
       trapVisitCrew,
+      permitInfo,
     }
   } catch (error) {
+    console.log('error', error)
     throw error
   }
 }
