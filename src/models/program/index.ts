@@ -240,7 +240,7 @@ async function postProgramFilesToAzure(file: Express.Multer.File) {
   const blobServiceClient =
     BlobServiceClient.fromConnectionString(connectionStr)
 
-  const containerName = 'clearlake-app-files'
+  const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME
   const containerClient = blobServiceClient.getContainerClient(containerName)
   const blobName = file.originalname + `_${new Date().getTime()}`
 
