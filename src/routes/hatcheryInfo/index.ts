@@ -1,5 +1,9 @@
 import { Router } from 'express'
-import { getHatcheryInfo, postHatcheryInfo } from '../../models/hatcheryInfo'
+import {
+  getHatcheryInfo,
+  postHatcheryInfo,
+  updateHatcheryInfo,
+} from '../../models/hatcheryInfo'
 
 const hatcheryInfoRouter = Router({ mergeParams: true })
 
@@ -30,3 +34,16 @@ export default (mainRouter: Router) => {
     }
   })
 }
+
+// PATCH
+hatcheryInfoRouter.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const updatedValues = req.body
+    const updatedHatcheryInfo = await updateHatcheryInfo({ id, updatedValues })
+    res.status(200).send(updatedHatcheryInfo)
+  } catch (error) {
+    console.error(error)
+    res.status(400).send(error)
+  }
+})

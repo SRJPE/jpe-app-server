@@ -27,10 +27,6 @@ async function getAllPersonnel(): Promise<Personnel[]> {
         'agency.id as agencyId',
         'agency.definition as agencyDefinition'
       )
-    console.log(
-      '🚀 ~ file: index.ts:24 ~ getAllPersonnel ~ personnelRecords:',
-      personnelRecords
-    )
 
     return personnelRecords
   } catch (error) {
