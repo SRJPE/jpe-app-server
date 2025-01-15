@@ -1,3 +1,4 @@
+import multer from 'multer'
 import db from '../../db'
 import {
   FishMeasureProtocol,
@@ -12,6 +13,7 @@ import { postHatcheryInfo } from '../hatcheryInfo'
 import { postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
 import { postTrapLocations } from '../trapLocations'
+import { BlobServiceClient } from '@azure/storage-blob'
 
 const { knex } = db
 
@@ -228,4 +230,34 @@ async function updateProgram({ id, updatedValues }): Promise<any> {
   }
 }
 
-export { getPersonnelPrograms, getAllPrograms, postProgram, updateProgram }
+async function postProgramFilesToAzure(file: Express.Multer.File) {
+  const connectionStr = process.env.AZURE_STORAGE_CONNECTION_STRING
+
+  if (!connectionStr) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING is not defined')
+  }
+
+  const blobServiceClient =
+    BlobServiceClient.fromConnectionString(connectionStr)
+
+  const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME
+  const containerClient = blobServiceClient.getContainerClient(containerName)
+  const blobName = file.originalname + `_${new Date().getTime()}`
+
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+
+  const uploadBlobResponse = await blockBlobClient.upload(
+    file.buffer,
+    file.size
+  )
+
+  return uploadBlobResponse
+}
+
+export {
+  getPersonnelPrograms,
+  getAllPrograms,
+  postProgram,
+  updateProgram,
+  postProgramFilesToAzure,
+}
