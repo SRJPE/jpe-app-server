@@ -14,6 +14,7 @@ import { postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
 import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
+import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 
 const { knex } = db
 
@@ -103,6 +104,10 @@ async function postProgram(programValues): Promise<{
   createdFishMeasureProtocolResponse: any
   createdPermitInformationResponse: any
 }> {
+  console.log(
+    '🚀 ~ file: index.ts:100 ~ postProgram ~ programValues:',
+    programValues
+  )
   try {
     const {
       metaData,
@@ -147,14 +152,35 @@ async function postProgram(programValues): Promise<{
     if (crewMembers && crewMembers.length > 0) {
       await Promise.all(
         crewMembers.map(async (crewMember: any) => {
-          const personnelPayload: Personnel = {
-            programId: createdProgramId,
-            ...crewMember,
+          if (crewMember.id) {
+            console.log(
+              '🚀 ~ file: index.ts:156 ~ crewMembers.map ~ crewMember:',
+              crewMember
+            )
+
+            console.log(
+              '🚀 ~ file: index.ts:156 ~ crewMembers.map ~ createdProgramId:',
+              createdProgramResponse
+            )
+            let postProgramPersonnel = await postProgramPersonnelTeam({
+              programId: createdProgramId,
+              personnelId: crewMember.id,
+            })
+
+            console.log(
+              `🚀 ~ file: index.ts:156 ~ crewMembers.map ~ ${crewMember.firstName} ${crewMember.lastName} added to ${createdProgramResponse[0].programName}:`,
+              postProgramPersonnel
+            )
+          } else {
+            const personnelPayload: Personnel = {
+              programId: createdProgramId,
+              ...crewMember,
+            }
+            const createdSinglePersonnelResponse = await postPersonnel(
+              personnelPayload
+            )
+            createdPersonnelResponse.push(createdSinglePersonnelResponse[0])
           }
-          const createdSinglePersonnelResponse = await postPersonnel(
-            personnelPayload
-          )
-          createdPersonnelResponse.push(createdSinglePersonnelResponse[0])
         })
       )
     }
