@@ -1,3 +1,4 @@
+import multer from 'multer'
 import db from '../../db'
 import {
   FishMeasureProtocol,
@@ -12,6 +13,8 @@ import { postHatcheryInfo } from '../hatcheryInfo'
 import { postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
 import { postTrapLocations } from '../trapLocations'
+import { BlobServiceClient } from '@azure/storage-blob'
+import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 
 const { knex } = db
 
@@ -145,14 +148,21 @@ async function postProgram(programValues): Promise<{
     if (crewMembers && crewMembers.length > 0) {
       await Promise.all(
         crewMembers.map(async (crewMember: any) => {
-          const personnelPayload: Personnel = {
-            programId: createdProgramId,
-            ...crewMember,
+          if (crewMember.id) {
+            let postProgramPersonnel = await postProgramPersonnelTeam({
+              programId: createdProgramId,
+              personnelId: crewMember.id,
+            })
+          } else {
+            const personnelPayload: Personnel = {
+              programId: createdProgramId,
+              ...crewMember,
+            }
+            const createdSinglePersonnelResponse = await postPersonnel(
+              personnelPayload
+            )
+            createdPersonnelResponse.push(createdSinglePersonnelResponse[0])
           }
-          const createdSinglePersonnelResponse = await postPersonnel(
-            personnelPayload
-          )
-          createdPersonnelResponse.push(createdSinglePersonnelResponse[0])
         })
       )
     }
@@ -228,4 +238,34 @@ async function updateProgram({ id, updatedValues }): Promise<any> {
   }
 }
 
-export { getPersonnelPrograms, getAllPrograms, postProgram, updateProgram }
+async function postProgramFilesToAzure(file: Express.Multer.File) {
+  const connectionStr = process.env.AZURE_STORAGE_CONNECTION_STRING
+
+  if (!connectionStr) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING is not defined')
+  }
+
+  const blobServiceClient =
+    BlobServiceClient.fromConnectionString(connectionStr)
+
+  const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME
+  const containerClient = blobServiceClient.getContainerClient(containerName)
+  const blobName = file.originalname + `_${new Date().getTime()}`
+
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+
+  const uploadBlobResponse = await blockBlobClient.upload(
+    file.buffer,
+    file.size
+  )
+
+  return uploadBlobResponse
+}
+
+export {
+  getPersonnelPrograms,
+  getAllPrograms,
+  postProgram,
+  updateProgram,
+  postProgramFilesToAzure,
+}
