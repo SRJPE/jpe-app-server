@@ -40,7 +40,7 @@ async function getPersonnelByAzureUid(
 ): Promise<Personnel> {
   try {
     const personnelRecords = await knex<Personnel>('personnel')
-      .join('agency', 'personnel.agency_id', 'agency.id')
+      .leftJoin('agency', 'personnel.agency_id', 'agency.id')
       .select(
         'personnel.*',
         'agency.id as agencyId',
