@@ -133,12 +133,9 @@ async function createTrapVisit(trapVisitValues): Promise<{
   createdTrapVisitCrewResponse: Array<TrapVisitCrew>
 }> {
   try {
-    trapVisitValues.trapVisitTimeStart = trapVisitValues.trapVisitTimeStart
-      ? new Date(trapVisitValues.trapVisitTimeStart)
-      : null
-    trapVisitValues.trapVisitTimeEnd = trapVisitValues.trapVisitTimeEnd
-      ? new Date(trapVisitValues.trapVisitTimeEnd)
-      : null
+    trapVisitValues.trapVisitTimeStart =
+      trapVisitValues?.trapVisitTimeStart || null
+    trapVisitValues.trapVisitTimeEnd = trapVisitValues?.trapVisitTimeEnd || null
     const trapVisitCrew = trapVisitValues.crew
     delete trapVisitValues.crew
 

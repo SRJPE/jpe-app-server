@@ -177,8 +177,8 @@ async function createCatchRaw(catchRawValues): Promise<{
           catchRawId: createdCatchRaw.id,
           programId: createdCatchRaw.programId,
           fishId: createdCatchRaw.taxonCode,
-          createdAt: new Date(createdCatchRaw.createdAt),
-          updatedAt: new Date(createdCatchRaw.updatedAt),
+          createdAt: createdCatchRaw.createdAt,
+          updatedAt: createdCatchRaw.updatedAt,
           ...markObj,
         }
       })
@@ -227,8 +227,8 @@ async function createCatchRaw(catchRawValues): Promise<{
           const markAppliedPayload = {
             catchRawId: createdCatchRaw.id,
             programId: createdCatchRaw.programId,
-            createdAt: new Date(createdCatchRaw.createdAt),
-            updatedAt: new Date(createdCatchRaw.updatedAt),
+            createdAt: createdCatchRaw.createdAt,
+            updatedAt: createdCatchRaw.updatedAt,
             ...appliedMarkSubmissionCopy,
           }
           const createdSingleMarkAppliedResponse = await postMarkApplied(
@@ -404,10 +404,39 @@ async function putCatchRaw(
   }
 }
 
+const deleteCatchRaw = async (catchRawId: string) => {
+  try {
+    // Delete related records in other tables first to maintain referential integrity
+    await knex<MarkAppliedI>('markApplied')
+      .where('catchRawId', catchRawId)
+      .del()
+
+    await knex<ExistingMarksI>('existingMarks')
+      .where('catchRawId', catchRawId)
+      .del()
+
+    await knex<GeneticSamplingDataI>('geneticSamplingData')
+      .where('catchRawId', catchRawId)
+      .del()
+
+    await knex<CatchFishConditionI>('catchFishCondition')
+      .where('catchRawId', catchRawId)
+      .del()
+
+    const deletedCatchRaw = await knex<CatchRaw>('catchRaw')
+      .where('id', catchRawId)
+      .del()
+    return deletedCatchRaw
+  } catch (error) {
+    throw error
+  }
+}
+
 export {
   getCatchRawRecord,
   getTrapVisitCatchRawRecords,
   getProgramCatchRawRecords,
   postCatchRaw,
   putCatchRaw,
+  deleteCatchRaw,
 }

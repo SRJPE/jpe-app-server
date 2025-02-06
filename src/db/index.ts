@@ -1,8 +1,12 @@
-import { Pool } from 'pg'
+import { Pool, types } from 'pg'
 import dotenv from 'dotenv'
 dotenv.config()
 import Knex from 'knex'
 import knexConfig from '../../knexfile.js'
+
+types.setTypeParser(1114, function (stringValue) {
+  return new Date(stringValue + 'Z').toISOString() // Ensure UTC and append "Z"
+})
 
 // Azure DB Connection Config
 const config = {
