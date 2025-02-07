@@ -104,12 +104,15 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
 
     const trapVisitCrew = await knex<any>('trapVisitCrew').select('*')
 
+    const permitInfo = await knex<any>('permitInfo').select('*')
+
     return {
       programs,
       trapLocations,
       releaseSites,
       crewMembers,
       trapVisitCrew,
+      permitInfo,
     }
   } catch (error) {
     throw error
