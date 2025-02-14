@@ -13,4 +13,16 @@ async function getRuns(): Promise<Array<DropdownOption>> {
   }
 }
 
-export { getRuns }
+// get run options
+async function getRunCodeMethods(): Promise<Array<DropdownOption>> {
+  try {
+    const runCodeMethods = await knex<DropdownOption>('runCodeMethod').select(
+      '*'
+    )
+    return runCodeMethods
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getRuns, getRunCodeMethods }

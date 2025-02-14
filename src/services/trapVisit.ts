@@ -2,7 +2,7 @@ import { getTrapFunctionalities } from '../models/trapVisit/trapFunctionality'
 import { getFishProcessedOptions } from '../models/trapVisit/fishProcessed'
 import { getLifeStages } from '../models/trapVisit/lifeStage'
 import { getMarkTypes } from '../models/trapVisit/markType'
-import { getRuns } from '../models/trapVisit/run'
+import { getRuns, getRunCodeMethods } from '../models/trapVisit/run'
 import { getUnits } from '../models/trapVisit/unit'
 import { getMarkColors } from '../models/trapVisit/markColor'
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
@@ -20,6 +20,7 @@ import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
 import { getFrequencyOptions } from '../models/program/frequency'
+import { getLengthAtDate } from '../models/trapVisit/lengthAtDate'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -45,6 +46,8 @@ const getAllTrapVisitDropdowns = async () => {
     getListingUnitOptions(),
     getFrequencyOptions(),
     getFishConditions(),
+    getLengthAtDate(),
+    getRunCodeMethods(),
   ]
   const keys = [
     'trapFunctionality',
@@ -67,6 +70,8 @@ const getAllTrapVisitDropdowns = async () => {
     'listingUnit',
     'frequency',
     'fishCondition',
+    'lengthAtDate',
+    'runCodeMethods',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
