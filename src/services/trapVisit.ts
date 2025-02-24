@@ -16,7 +16,7 @@ import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunction
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 import { getTaxon } from '../models/trapVisit/taxon'
 import { getFishConditions } from '../models/trapVisit/fishCondition'
-import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
+import { getReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
 import { getFrequencyOptions } from '../models/program/frequency'
@@ -41,7 +41,7 @@ const getAllTrapVisitDropdowns = async () => {
     getReleasePurposeOptions(),
     getVisitTypes(),
     getPlusCountMethodology(),
-    getTwoMostRecentReleaseMarks(),
+    getReleaseMarks(),
     getFundingAgencyOptions(),
     getListingUnitOptions(),
     getFrequencyOptions(),
@@ -65,7 +65,7 @@ const getAllTrapVisitDropdowns = async () => {
     'releasePurpose',
     'visitType',
     'plusCountMethodology',
-    'twoMostRecentReleaseMarks',
+    'releaseMarks',
     'fundingAgency',
     'listingUnit',
     'frequency',
