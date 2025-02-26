@@ -11,6 +11,7 @@ module.exports = {
     database: process.env.AZURE_DB,
     port: parseInt(process.env.AZURE_PORT, 10) || 5432,
     ssl: process.env.AZURE_SSL === 'TRUE',
+    timezone: 'UTC', // Force UTC
   },
   pool: {
     min: 2,

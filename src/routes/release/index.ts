@@ -1,9 +1,5 @@
 import { Router } from 'express'
-import {
-  postRelease,
-  getRelease,
-} from '../../models/release'
-
+import { postRelease, getRelease } from '../../models/release'
 
 const releaseRouter = Router({ mergeParams: true })
 

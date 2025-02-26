@@ -2,11 +2,14 @@ import { Router } from 'express'
 import {
   getPersonnelPrograms,
   postProgram,
+  postProgramFilesToAzure,
   updateProgram,
 } from '../../models/program'
 import { getBiWeeklyPassageSummary } from '../../models/reports'
+import multer from 'multer'
 
 const programRouter = Router({ mergeParams: true })
+const upload = multer()
 
 export default (mainRouter: Router) => {
   mainRouter.use('/program', programRouter)
@@ -29,6 +32,18 @@ export default (mainRouter: Router) => {
       const programValues = req.body
       const createdProgram = await postProgram(programValues)
       res.status(200).send(createdProgram)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  programRouter.post('/files', upload.single('file'), async (req, res) => {
+    try {
+      const file = req.file
+      const uploadBlobResponse = await postProgramFilesToAzure(file)
+
+      res.status(200).send(uploadBlobResponse)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)

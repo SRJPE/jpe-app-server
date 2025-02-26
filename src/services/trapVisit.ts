@@ -2,7 +2,7 @@ import { getTrapFunctionalities } from '../models/trapVisit/trapFunctionality'
 import { getFishProcessedOptions } from '../models/trapVisit/fishProcessed'
 import { getLifeStages } from '../models/trapVisit/lifeStage'
 import { getMarkTypes } from '../models/trapVisit/markType'
-import { getRuns } from '../models/trapVisit/run'
+import { getRuns, getRunCodeMethods } from '../models/trapVisit/run'
 import { getUnits } from '../models/trapVisit/unit'
 import { getMarkColors } from '../models/trapVisit/markColor'
 import { getReleasePurposeOptions } from '../models/trapVisit/releasePurpose'
@@ -16,10 +16,11 @@ import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunction
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
 import { getTaxon } from '../models/trapVisit/taxon'
 import { getFishConditions } from '../models/trapVisit/fishCondition'
-import { getTwoMostRecentReleaseMarks } from '../models/release/releaseMarks'
+import { getReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
 import { getFrequencyOptions } from '../models/program/frequency'
+import { getLengthAtDate } from '../models/trapVisit/lengthAtDate'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -40,11 +41,13 @@ const getAllTrapVisitDropdowns = async () => {
     getReleasePurposeOptions(),
     getVisitTypes(),
     getPlusCountMethodology(),
-    getTwoMostRecentReleaseMarks(),
+    getReleaseMarks(),
     getFundingAgencyOptions(),
     getListingUnitOptions(),
     getFrequencyOptions(),
     getFishConditions(),
+    getLengthAtDate(),
+    getRunCodeMethods(),
   ]
   const keys = [
     'trapFunctionality',
@@ -62,11 +65,13 @@ const getAllTrapVisitDropdowns = async () => {
     'releasePurpose',
     'visitType',
     'plusCountMethodology',
-    'twoMostRecentReleaseMarks',
+    'releaseMarks',
     'fundingAgency',
     'listingUnit',
     'frequency',
     'fishCondition',
+    'lengthAtDate',
+    'runCodeMethods',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
@@ -81,7 +86,6 @@ const getAllTrapVisitDropdowns = async () => {
 // NOTE: Production functionality should filter visit setup default values
 // by personnel Id of signed in user
 
-// for DEVELOPMENT, we will return all values
 const getVisitSetupDefaultValues = async (personnelId: string) => {
   try {
     const programs = await getPersonnelPrograms(personnelId)
@@ -102,13 +106,22 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
 
     const crewMembers = await getDefaultCrewMembers(programIds)
 
+    const trapVisitCrew = await knex<any>('trapVisitCrew').select('*')
+
+    const permitInfo = await knex<any>('permitInfo')
+      .select('*')
+      .whereIn('programId', programIds)
+
     return {
       programs,
       trapLocations,
       releaseSites,
       crewMembers,
+      trapVisitCrew,
+      permitInfo,
     }
   } catch (error) {
+    console.log('error', error)
     throw error
   }
 }

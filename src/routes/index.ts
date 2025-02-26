@@ -13,8 +13,18 @@ import hatcheryInfoRouter from './hatcheryInfo'
 import permitInfoRouter from './permitInfo'
 import programPersonnelTeamRouter from './programPersonnelTeam'
 import reportsRouter from './reports'
+import existingMarksRouter from './existingMarks'
 
 const mainRouter = express.Router()
+
+mainRouter.get('/api-version', async (req, res) => {
+  try {
+    res.status(200).send('1')
+  } catch (error) {
+    console.error(error)
+    res.status(400).send(error)
+  }
+})
 
 mainRouter.use('/', isAuthenticated)
 
@@ -22,6 +32,7 @@ trapVisitRouter(mainRouter)
 userRouter(mainRouter)
 programRouter(mainRouter)
 catchRawRouter(mainRouter)
+existingMarksRouter(mainRouter)
 releaseRouter(mainRouter)
 releaseSiteRouter(mainRouter)
 personnelRouter(mainRouter)

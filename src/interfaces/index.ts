@@ -22,7 +22,7 @@ export interface TrapVisit {
   rpmAtStop?: number
   coneDepth?: number
   inHalfConeConfiguration?: boolean
-  debrisVolumeLiters?: number
+  debrisVolumeGal?: number
   createdAt?: Date
   updatedAt?: Date
   qcCompleted?: boolean
