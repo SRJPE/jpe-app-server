@@ -54,7 +54,7 @@ export const prepareBiWeeklyReportEmailForSend = async (
    `,
   }
   return await sendEmail({
-    receivers: ['bpintel@flowwest.com'],
+    receivers: ['jhoang@flowwest.com'],
     subject: `test subject`,
     body: view.text,
     htmlBody: view.html,
@@ -65,7 +65,7 @@ export const prepareBiWeeklyReportEmailForSend = async (
         // content: fileContentSync,
       },
     ],
-  }).catch((error) => {
+  }).catch(error => {
     console.error(error)
   })
 }
