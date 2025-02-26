@@ -69,12 +69,21 @@ async function getSubstrateOptions(): Promise<Array<CodeDropdownOption>> {
   }
 }
 
-async function getGearStatus(): Promise<Array<CodeDropdownOption>> {
+async function getGearStatusOptions(): Promise<Array<CodeDropdownOption>> {
   try {
-    const substrateRecords = await knex<CodeDropdownOption>(
+    const gearStatusRecords = await knex<CodeDropdownOption>(
       'gearStatus'
     ).select('*')
-    return substrateRecords
+    return gearStatusRecords
+  } catch (error) {
+    throw error
+  }
+}
+
+async function getYsiNumOptions(): Promise<Array<CodeDropdownOption>> {
+  try {
+    const ysiNumRecords = await knex<CodeDropdownOption>('ysiNum').select('*')
+    return ysiNumRecords
   } catch (error) {
     throw error
   }
@@ -87,5 +96,6 @@ export {
   getFlowDirectionOptions,
   getWeatherCodeOptions,
   getSubstrateOptions,
-  getGearStatus,
+  getGearStatusOptions,
+  getYsiNumOptions,
 }

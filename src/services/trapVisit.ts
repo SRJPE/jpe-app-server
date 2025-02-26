@@ -28,7 +28,8 @@ import {
   getFlowDirectionOptions,
   getWeatherCodeOptions,
   getSubstrateOptions,
-  getGearStatus,
+  getGearStatusOptions,
+  getYsiNumOptions,
 } from '../models/trapVisit/waterQuality'
 const { knex } = db
 
@@ -63,7 +64,8 @@ const getAllTrapVisitDropdowns = async () => {
     getFlowDirectionOptions(),
     getWeatherCodeOptions(),
     getSubstrateOptions(),
-    getGearStatus(),
+    getGearStatusOptions(),
+    getYsiNumOptions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -95,6 +97,7 @@ const getAllTrapVisitDropdowns = async () => {
     'weatherCode',
     'substrate',
     'gearStatus',
+    'ysiNum',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
