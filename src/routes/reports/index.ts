@@ -7,7 +7,7 @@ export default (mainRouter: Router) => {
   mainRouter.use('/reports', reportsRouter)
 
   //GET bi-weekly passage summary report
-  reportsRouter.get('/biweeklyPassageSummary/:id', async (req, res) => {
+  reportsRouter.get('/bi-weekly-passage-summary/:id', async (req, res) => {
     try {
       const { id } = req.params
       const biweeklyPassageSummaryReport = await getBiWeeklyPassageSummary(id)
