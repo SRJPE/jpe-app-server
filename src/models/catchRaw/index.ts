@@ -366,11 +366,16 @@ async function putCatchRaw(
       updatedGeneticSamplingData = await Promise.all(
         catchRawObject.createdGeneticSamplingDataResponse.map(
           async geneticSample => {
-            let id = geneticSample.id
-            delete geneticSample.id
-            await knex<GeneticSamplingDataI>('geneticSamplingData')
-              .where('id', id)
-              .update(geneticSample, ['*'])
+            let id = geneticSample?.id
+            delete geneticSample?.id
+            if (id) {
+              const updatedGeneticSample = await knex<GeneticSamplingDataI>(
+                'geneticSamplingData'
+              )
+                .where('id', id)
+                .update(geneticSample, ['*'])
+              return updatedGeneticSample[0]
+            } else return geneticSample
           }
         )
       )
