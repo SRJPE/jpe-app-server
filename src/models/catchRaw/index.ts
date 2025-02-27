@@ -351,11 +351,18 @@ async function putCatchRaw(
     if (catchRawObject.createdExistingMarksResponse) {
       updatedExistingMarks = await Promise.all(
         catchRawObject.createdExistingMarksResponse.map(async existingMark => {
-          let id = existingMark.id
-          delete existingMark.id
-          await knex<ExistingMarksI>('existingMarks')
-            .where('id', id)
-            .update(existingMark, ['*'])
+          let id = existingMark?.id
+          delete existingMark?.id
+          if (id) {
+            const updatedExistingMark = await knex<ExistingMarksI>(
+              'existingMarks'
+            )
+              .where('id', id)
+              .update(existingMark, ['*'])
+            return updatedExistingMark[0]
+          } else {
+            return existingMark
+          }
         })
       )
     }
