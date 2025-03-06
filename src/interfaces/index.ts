@@ -6,6 +6,14 @@ export interface DropdownOption {
   updatedAt: Date
 }
 
+export interface CodeDropdownOption {
+  id: number
+  code: string
+  description?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface TrapVisit {
   id: number
   projectId?: number
