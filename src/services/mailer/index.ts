@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 // import { emailCredentials } from '../../config'
 import styles from './emailStyles'
 import { ConfidentialClientApplication } from '@azure/msal-node'
+import { EmailClient } from '@azure/communication-email'
 // const nodemailer = require('nodemailer')
 // const fs = require('fs')
 const fs = require('fs').promises
@@ -19,34 +20,6 @@ import {
   PageOrientation,
   Packer,
 } from 'docx'
-
-const msalConfig = {
-  auth: {
-    // clientId: process.env.CLIENT_ID,
-    clientId: process.env.JPE_SERVER_API_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.TENANT_ID}`,
-    clientSecret: process.env.JPE_SERVER_API_CLIENT_SECRET,
-  },
-}
-
-const cca = new ConfidentialClientApplication(msalConfig)
-
-const getAccessToken = async () => {
-  const result = await cca.acquireTokenByClientCredential({
-    scopes: ['https://graph.microsoft.com/.default'],
-  })
-  return result.accessToken
-}
-
-export const emailCredentials = {
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT as unknown as number,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-}
 
 // export const getFileContentFromPath = async (
 //   filePath: string
@@ -295,7 +268,13 @@ export const prepareBiWeeklyReportEmailForSend = async ({
    `,
   }
 
-  await Packer.toBuffer(doc).then(buffer => {
+  await Packer.toBase64String(doc).then(base64String => {
+    console.log(
+      '🚀 ~ index.ts:272 ~ awaitPacker.toBase64String ~ base64String:',
+      base64String
+    )
+
+    // await Packer.toBuffer(doc).then(buffer => {
     // const filePath = path.join(
     //   __dirname,
     //   `${program.programName.split(' ').join('-')}_${reportStartDate
@@ -311,11 +290,19 @@ export const prepareBiWeeklyReportEmailForSend = async ({
       htmlBody: view.html,
       attachments: [
         {
-          filename: `${program.programName
-            .split(' ')
-            .join('-')}_${reportStartDate.split('/').join('-')}.docx`,
-          content: buffer,
+          name: `${program.programName.split(' ').join('-')}_${reportStartDate
+            .split('/')
+            .join('-')}.docx`,
+          contentInBase64: base64String,
+          contentType:
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
+        // {
+        //   filename: `${program.programName
+        //     .split(' ')
+        //     .join('-')}_${reportStartDate.split('/').join('-')}.docx`,
+        //   content: buffer,
+        // },
       ],
     }).catch(error => {
       console.error('send error', error)
@@ -418,6 +405,35 @@ interface EmailParameters {
   }
 }
 
+const msalConfig = {
+  auth: {
+    // clientId: process.env.CLIENT_ID,
+    clientId: process.env.JPE_SERVER_API_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${process.env.TENANT_ID}`,
+    clientSecret: process.env.JPE_SERVER_API_CLIENT_SECRET,
+  },
+}
+
+const cca = new ConfidentialClientApplication(msalConfig)
+
+const getAccessToken = async () => {
+  const result = await cca.acquireTokenByClientCredential({
+    scopes: ['https://graph.microsoft.com/.default'],
+  })
+  return result.accessToken
+}
+
+export const emailCredentials = {
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT as unknown as number,
+  secure: false, // true for 465, false for other ports
+
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+}
+
 export const sendEmail = async ({
   sender = emailCredentials.auth.user,
   receivers,
@@ -430,16 +446,63 @@ export const sendEmail = async ({
   transportConfig = emailCredentials,
 }: EmailParameters) => {
   // let transporter = nodemailer.createTransport(transportConfig)
+  const connectionString = `endpoint=https://datatackle-communication-service.unitedstates.communication.azure.com/;accesskey=4ux6nLevdPSdNPiX8kRqSuTJJt7qJvbKF6FfAJCRjEHiPqwa3TpUJQQJ99BCACULyCp1gjM9AAAAAZCSUmV4`
+  const client = new EmailClient(connectionString)
+
+  const message = {
+    senderAddress:
+      'DoNotReply@8be496df-12d6-4468-ad85-cbd102f45c43.azurecomm.net',
+    content: {
+      subject: 'Email successfully sent!',
+      plainText:
+        'Emails are being successfully sent from the Communication Service. Trying to figure out if we can modify the sender address.',
+    },
+    recipients: {
+      to: [
+        {
+          address: 'wwhitfield@flowwest.com',
+          displayName: 'Customer Name',
+        },
+        {
+          address: 'jhoang@flowwest.com',
+          displayName: 'Customer Name',
+        },
+      ],
+    },
+    attachments,
+  }
+
+  const poller = client.beginSend(message).then(poller => {
+    console.log(
+      '🚀 ~ index.ts:476 ~ poller ~ message:',
+      Object.entries(message)
+    )
+    console.log('🚀 ~ index.ts:477 ~ poller ~ poller:', poller)
+    return poller.pollUntilDone()
+  })
+
+  return
+
   const accessToken = await getAccessToken()
 
   const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT as unknown as number,
+    secure: false, // true for 465, false for other ports
     service: 'Outlook365',
     auth: {
       type: 'OAuth2',
       user: process.env.EMAIL_USER,
       accessToken: accessToken,
+      clientSecret: process.env.JPE_SERVER_API_CLIENT_SECRET,
+      clientId: process.env.JPE_SERVER_API_CLIENT_ID,
+    },
+    tls: {
+      ciphers: 'SSLv3',
     },
   })
+
+  // const transporter = nodemailer.createTransport(transportConfig)
 
   const formattedHtml = `
     <body style='${styles.emailBody}'>
