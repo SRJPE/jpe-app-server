@@ -1,37 +1,59 @@
-import nodemailer from 'nodemailer'
-// import { emailCredentials } from '../../config'
-import styles from './emailStyles'
-import { ConfidentialClientApplication } from '@azure/msal-node'
 import { EmailClient } from '@azure/communication-email'
-// const nodemailer = require('nodemailer')
-// const fs = require('fs')
-const fs = require('fs').promises
-const path = require('path')
 import {
-  SectionType,
-  Paragraph,
-  Document,
-  TextRun,
-  Table,
-  TableRow,
-  WidthType,
-  TableCell,
   AlignmentType,
-  PageOrientation,
+  BorderStyle,
+  Document,
+  ExternalHyperlink,
   Packer,
+  PageOrientation,
+  Paragraph,
+  SectionType,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
 } from 'docx'
 
-// export const getFileContentFromPath = async (
-//   filePath: string
-// ): Promise<Buffer> => {
-//   try {
-//     const content = await fs.readFile(filePath)
-//     return content
-//   } catch (error) {
-//     console.error(`Error reading file from path ${filePath}:`, error)
-//     throw error
-//   }
-// }
+//===========================================
+// Mail Service Configuration
+//===========================================
+
+export const sendEmail = async ({
+  receivers,
+  subject,
+  plainText,
+  html,
+  cc,
+  bcc,
+  attachments,
+}: EmailParameters) => {
+  // let transporter = nodemailer.createTransport(transportConfig)
+  const connectionString = process.env.EMAIL_CONNECTION_STRING
+  const client = new EmailClient(connectionString)
+
+  const message = {
+    senderAddress:
+      'DoNotReply@8be496df-12d6-4468-ad85-cbd102f45c43.azurecomm.net',
+    content: {
+      subject,
+      plainText,
+      html,
+    },
+    recipients: {
+      to: receivers,
+    },
+    attachments,
+  }
+
+  const poller = await client.beginSend(message)
+
+  return poller.pollUntilDone()
+}
+
+//===========================================
+// Content Utility Functions
+//===========================================
 
 export const getTwoWeeksPriorDate = () => {
   const currentDate = new Date()
@@ -40,116 +62,112 @@ export const getTwoWeeksPriorDate = () => {
   return twoWeeksPriorDate.toLocaleDateString()
 }
 
+const calculatePassageTotals = data => {
+  const totalFishSpring = data.reduce((acc, curr) => {
+    return acc + +curr.totalFishSpring
+  }, 0)
+  const minFishSpringFl = data.reduce((acc, curr) => {
+    return acc + +curr.minFishSpringFl
+  }, 0)
+  const maxFishSpringFl = data.reduce((acc, curr) => {
+    return acc + +curr.maxFishSpringFl
+  }, 0)
+  const totalFishFall = data.reduce((acc, curr) => {
+    return acc + +curr.totalFishFall
+  }, 0)
+  const minFishFallFl = data.reduce((acc, curr) => {
+    return acc + +curr.minFishFallFl
+  }, 0)
+  const maxFishFallFl = data.reduce((acc, curr) => {
+    return acc + +curr.maxFishFallFl
+  }, 0)
+  const totalFishWinter = data.reduce((acc, curr) => {
+    return acc + +curr.totalFishWinter
+  }, 0)
+  const minFishWinterFl = data.reduce((acc, curr) => {
+    return acc + +curr.minFishWinterFl
+  }, 0)
+  const maxFishWinterFl = data.reduce((acc, curr) => {
+    return acc + +curr.maxFishWinterFl
+  }, 0)
+  const totalFishLateFall = data.reduce((acc, curr) => {
+    return acc + +curr.totalFishLateFall
+  }, 0)
+  const minFishLateFallFl = data.reduce((acc, curr) => {
+    return acc + +curr.minFishLateFallFl
+  }, 0)
+  const maxFishLateFallFl = data.reduce((acc, curr) => {
+    return acc + +curr.maxFishLateFallFl
+  }, 0)
+  const totalFishHybrid = data.reduce((acc, curr) => {
+    return acc + +curr.totalFishHybrid
+  }, 0)
+  const minFishHybridFl = data.reduce((acc, curr) => {
+    return acc + +curr.minFishHybridFl
+  }, 0)
+  const maxFishHybridFl = data.reduce((acc, curr) => {
+    return acc + +curr.maxFishHybridFl
+  }, 0)
+
+  return {
+    totalFishSpring,
+    minFishSpringFl,
+    maxFishSpringFl,
+    totalFishFall,
+    minFishFallFl,
+    maxFishFallFl,
+    totalFishWinter,
+    minFishWinterFl,
+    maxFishWinterFl,
+    totalFishLateFall,
+    minFishLateFallFl,
+    maxFishLateFallFl,
+    totalFishHybrid,
+    minFishHybridFl,
+    maxFishHybridFl,
+  }
+}
+
 export const prepareBiWeeklyReportEmailForSend = async ({
-  to,
-  subject,
+  to: { recipientEmail, recipientName },
+  from: { senderName, senderEmail },
   isScheduled,
   reportContent,
 }: {
-  to: string
-  subject: string
+  to: { recipientEmail: string; recipientName: string }
+  from: { senderName: string; senderEmail: string }
   isScheduled: string | boolean
   reportContent: Record<string, any>
 }) => {
-  console.log('🚀 ~ index.ts:37 ~ reportContent:', reportContent)
-  console.log('🚀 ~ index.ts:38 ~ isScheduled:', isScheduled)
-  console.log('🚀 ~ index.ts:39 ~ subject:', subject)
-  console.log('🚀 ~ index.ts:40 ~ to:', to)
+  const [recipientFirstName, recipientLastName] = recipientName.split(' ')
 
   const program = reportContent.program.at(0)
   const personnelLead = reportContent.personnelLead.at(0)
   const fundingAgency = reportContent.fundingAgency.at(0)
-  const { trapVisits, catchBiWeekly, environmentalBiWeekly, releaseBiWeekly } =
-    reportContent
+  const {
+    trapVisits,
+    catchBiWeekly,
+    environmentalBiWeekly,
+    releaseBiWeekly,
+    tableData1,
+  } = reportContent
 
   const { definition: programLeadAgency } = fundingAgency
-  const { streamName } = program
+  const { streamName, programName } = program
   const {
-    firstName,
-    lastName,
+    firstName: programLeadFirstName,
+    lastName: programLeadLastName,
     email: programLeadEmail,
     phone: programLeadPhoneNumber,
   } = personnelLead
-  const programLead = `${firstName} ${lastName}`
+  const programLead = `${programLeadFirstName} ${programLeadLastName}`
   const systemDate = new Date().toLocaleDateString()
   const reportStartDate = getTwoWeeksPriorDate()
   // needs to be updated based on the catch raw (we are defaulting to "EXPERT JUDGEMENT" For chinook)"
   const programRunDesignationMethod = 'TEST RUN METHOD'
 
-  const createParagraph = (text: string): Paragraph => {
-    return new Paragraph({
-      spacing: {
-        after: 250,
-      },
-      children: [
-        new TextRun({
-          text,
-          size: 25,
-        }),
-      ],
-    })
-  }
   const calculateHIstoricalCumulativePassage = () => {}
   const calculatePassageEstimates = () => {}
-  const tableData1 = {
-    headers: [
-      'Date',
-      'Discharge volume (cfs)',
-      'Water temperature (°C)',
-      'Water turbidity (NTU)',
-      'BY22 Winter',
-      'BY22 Spring',
-      'BY22 Fall',
-      'BY22 Late-Fal',
-      'BY22 RBT',
-    ],
-  }
-  const tableData2 = {
-    headers: [
-      'Date',
-      'Discharge volume (cfs)',
-      'Water temperature (°C)',
-      'Water turbidity (NTU)',
-      'BY22 Winter',
-      'BY22 Spring',
-      'BY22 Fall',
-      'BY22 Late-Fal',
-      'BY22 RBT',
-    ],
-  }
-
-  const createTable = (tableData: any) => {
-    return new Table({
-      width: {
-        // size: 14535,
-        // type: WidthType.DXA,
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      rows: [
-        new TableRow({
-          tableHeader: true,
-          // height: { value: 40, rule: HeightRule.AUTO },
-          children: [
-            ...tableData.headers.map((headerText: string) => {
-              return new TableCell({
-                // width: {
-                //   size: 3505,
-                //   type: WidthType.DXA,
-                // },
-
-                children: [new Paragraph(headerText)],
-                width: {
-                  size: 100 / tableData.headers.length,
-                  type: WidthType.PERCENTAGE,
-                },
-              })
-            }),
-          ],
-        }),
-      ],
-    })
-  }
 
   let doc = new Document({
     sections: [
@@ -211,20 +229,22 @@ export const prepareBiWeeklyReportEmailForSend = async ({
               }),
             ],
           }),
-          createParagraph('To: Interested Parties'),
-          createParagraph(`From: ${programLead}, ${programLeadAgency}`),
-          createParagraph(
-            `Subject: Biweekly report(${reportStartDate} - ${systemDate})`
-          ),
-          createParagraph(
-            `Please find attached preliminary daily estimates of passage, 90% confidence intervals, and fork length ranges of unmarked juvenile salmonids sampled at ${streamName} for the period ${reportStartDate} through ${systemDate}. Race designation was assigned using ${programRunDesignationMethod}.`
-          ),
-          createParagraph(
-            `Please note that data contained in these reports is subject to revision as this data is preliminary and undergoing QA/QC procedures.`
-          ),
-          createParagraph(
-            `If you have any questions, please feel free to contact me at ${programLeadPhoneNumber}, ${programLeadEmail}.`
-          ),
+          createParagraph({ text: 'To: Interested Parties' }),
+          createParagraph({
+            text: `From: ${programLead}, ${programLeadAgency}`,
+          }),
+          createParagraph({
+            text: `Subject: Biweekly Report (${reportStartDate} - ${systemDate})`,
+          }),
+          createParagraph({
+            text: `Please find attached preliminary daily estimates of passage, 90% confidence intervals, and fork length ranges of unmarked juvenile salmonids sampled at ${streamName} for the period ${reportStartDate} through ${systemDate}. Race designation was assigned using ${programRunDesignationMethod}.`,
+          }),
+          createParagraph({
+            text: `Please note that data contained in these reports is subject to revision as this data is preliminary and undergoing QA/QC procedures.`,
+          }),
+          createParagraph({
+            text: `If you have any questions, please feel free to contact me at ${programLeadPhoneNumber}, ${programLeadEmail}.`,
+          }),
           // createTable(),
         ],
       },
@@ -232,62 +252,188 @@ export const prepareBiWeeklyReportEmailForSend = async ({
         properties: {
           type: SectionType.NEXT_PAGE,
           page: {
+            margin: {
+              top: 720, // 0.5 inches
+              right: 1440, // 1 inch
+              bottom: 720, // 0.5 inches
+              left: 1440, // 1 inch
+            },
             size: {
               orientation: PageOrientation.LANDSCAPE,
             },
           },
         },
         children: [
-          createParagraph(
-            `Table 1.─ 
-            Historical mean cumulative passage for week [System week] and run. Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`
-          ),
-          createParagraph(
-            `Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`
-          ),
-          createTable(tableData1),
-          createParagraph(`Table 2.- Passage Estimates`),
-          createParagraph(
-            `[Generate table 2 based on querying database and expanding daily counts to passage estimate based on baileys efficiency - you will need to query catch, environmental, and releases (past 2 weeks`
-          ),
-          createTable(tableData2),
+          createParagraph({
+            fontSize: 20,
+            text: `Table 1.─ Historical mean cumulative passage for week [System week] and run. Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
+          }),
+          createParagraph({
+            fontSize: 20,
+            text: `Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
+          }),
+          createTable({
+            tableData: {
+              data: tableData1,
+              headers: [
+                'Date',
+                'Discharge volume (cfs)',
+                'Water temperature (°C)',
+                'Water turbidity (NTU)',
+                'BY22 Winter',
+                'BY22 Spring',
+                'BY22 Fall',
+                'BY22 \nLate-Fall',
+                'BY22 RBT',
+              ],
+            },
+            passageTotals: calculatePassageTotals(tableData1),
+          }),
+          new Paragraph({
+            spacing: { before: 100 },
+
+            border: {
+              top: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
+            },
+            children: [
+              new TextRun({
+                text: '1',
+                size: 16,
+                superScript: true,
+              }),
+              new TextRun({
+                text: ` Peak daily discharge values do not account for diversions at RBDD and only represent peak flows registered at the Bend Bridge Gauging station `,
+                size: 20,
+              }),
+              new ExternalHyperlink({
+                children: [
+                  new TextRun({
+                    text: `(http://cdec2.water.ca.gov/cgi-progs/queryFx?bnd)`,
+                    style: 'Hyperlink',
+                    size: 20,
+                  }),
+                ],
+                link: 'http://cdec2.water.ca.gov/cgi-progs/queryFx?bnd',
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { before: 100 },
+            children: [
+              new TextRun({
+                text: '2',
+                size: 16,
+                superScript: true,
+              }),
+              new TextRun({
+                text: ` Biweekly totals may be greater than the sum of the daily estimates presented in this table if sampling was not conducted on each day of the biweekly period. A dash (-) denotes those dates. To estimate daily passage for days that were not sampled, we impute missed sample days with the weekly mean value of days sampled within the week.`,
+                size: 20,
+              }),
+            ],
+          }),
+          ,
         ],
       },
     ],
   })
 
   const view = {
-    html: `
-      <p>Hi ,</p>
-
-      <p> has begun the for the following charter: (Charter DCN:)</a></strong>. </p>
+    plainText: `Dear ${recipientEmail},  
+    
+    ${senderName} (${senderEmail}) has shared the biweekly report for the ${programName} covering ${reportStartDate} - ${systemDate}.  
+    
+    The report is attached as a DOCX file for your review.  
+    
+    If you have any questions, please contact the program lead, ${programLead} at ${programLeadEmail}.  
+    
+    Best regards,  
+    DataTackle Support Team  
     `,
-    text: `Hi, $,
-    \n\n
-    has begun the for the following charter:\n (Charter DCN:).
-   `,
+    html: `<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Received</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; overflow:hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                    <!-- Logo -->
+                    <tr>
+                        <td align="center" style="padding: 20px; background-color: #0A7D7D;">
+                            <img src="https://github.com/SRJPE/rst-pilot-app-client/blob/dev/assets/hands_and_bucket_data_tackle_logo.png?raw=true" alt="Data Tackle Logo" width="150" style="display: block; max-width: 100%; border-radius: 50%;">
+                        </td>
+                    </tr>
+
+                    <!-- Heading -->
+                    <tr>
+                        <td align="center" style="font-size: 24px; color: #fff; padding-bottom: 15px; background-color: #0A7D7D;">
+                           New Biweekly Report
+                        </td>
+                    </tr>
+
+                    <!-- Message -->
+                    <tr>
+                        <td style="font-size: 16px; color: #555; line-height: 1.5; padding: 0 20px; padding-top: 25px;">
+                            Dear ${recipientFirstName},
+                            <br><br>
+                         ${senderName} has shared the biweekly report for the ${programName} covering ${reportStartDate} - ${systemDate}.
+                          
+                          <br/><br/>
+The report is attached as a DOCX file for your review.
+                          <br/><br/>
+                            If you have any questions, please contact the program lead, ${programLead} at <a href="mailto:${programLeadEmail}" style="color: #16687a; text-decoration: none;">${programLeadEmail}</a>.
+                           <br/><br/>
+                    </tr>
+
+                    <!-- Signature -->
+                    <tr>
+                        <td style="font-size: 16px; color: #555; line-height: 1.5; padding: 0 20px;">
+                            Best regards,<br>
+                            <strong>DataTackle Support Team</strong>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding: 20px 0;">
+                            <hr style="border: none; height: 1px; background-color: #ccc; width: 100%;">
+                        </td>
+                    </tr>
+
+      
+
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" style="font-size: 14px; color: #777; padding-bottom: 20px;">
+                            &copy; ${new Date().getFullYear()} FlowWest, Inc | All rights reserved.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>`,
   }
 
+  //To send the email with the attachment
+
   await Packer.toBase64String(doc).then(base64String => {
-    console.log(
-      '🚀 ~ index.ts:272 ~ awaitPacker.toBase64String ~ base64String:',
-      base64String
-    )
-
-    // await Packer.toBuffer(doc).then(buffer => {
-    // const filePath = path.join(
-    //   __dirname,
-    //   `${program.programName.split(' ').join('-')}_${reportStartDate
-    //     .split('/')
-    //     .join('-')}.docx`
-    // )
-    // fs.writeFile(filePath, buffer)
-
     sendEmail({
-      receivers: ['wwhitfield@flowwest.com', 'jhoang@flowwest.com'],
-      subject: `test subject`,
-      body: view.text,
-      htmlBody: view.html,
+      receivers: [
+        {
+          address: recipientEmail,
+          displayName: recipientName,
+        },
+      ],
+      subject: `Biweekly Report for [Program Name] – [Date Range]`,
+      plainText: view.plainText,
+      html: view.html,
       attachments: [
         {
           name: `${program.programName.split(' ').join('-')}_${reportStartDate
@@ -297,82 +443,730 @@ export const prepareBiWeeklyReportEmailForSend = async ({
           contentType:
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
-        // {
-        //   filename: `${program.programName
-        //     .split(' ')
-        //     .join('-')}_${reportStartDate.split('/').join('-')}.docx`,
-        //   content: buffer,
-        // },
       ],
     }).catch(error => {
       console.error('send error', error)
     })
   })
 
-  // return await sendEmail({
-  //   receivers: ['jhoang@flowwest.com'],
-  //   subject: `test subject`,
-  //   body: view.text,
-  //   htmlBody: view.html,
-  //   attachments: [
-  //     {
-  //       filename: filePath2,
-  //       content: fileContent,
-  //       // content: fileContentSync,
-  //     },
-  //   ],
-  // }).catch(error => {
-  //   console.error(error)
+  // To save the document to the server directory - Document Creation Testing
+
+  // await Packer.toBuffer(doc).then(buffer => {
+  //   const filePath = path.join(
+  //     __dirname,
+  //     `${program.programName.split(' ').join('-')}_${reportStartDate
+  //       .split('/')
+  //       .join('-')}.docx`
+  //   )
+  //   fs.writeFile(filePath, buffer)
   // })
 }
 
-// export const testFunc2 = async (to, subject, filePath) => {
-//   console.log('🚀 ~ reportRouter.post ~ filePath:', filePath)
-//   console.log('🚀 ~ reportRouter.post ~ subject:', subject)
-//   console.log('🚀 ~ reportRouter.post ~ to:', to)
+//===========================================
+// Document Constructor Functions
+//===========================================
 
-//   // })
-//   // console.log('🚀 ~ reportRouter.post ~ transporter:', transporter)
+const createParagraph = ({
+  text,
+  fontSize,
+  textAlignment = 'left',
+  bold = false,
+  spacing,
+}: {
+  text: string
+  fontSize?: number
+  bold?: boolean
+  spacing?: { before?: number; after?: number }
+  textAlignment?:
+    | 'left'
+    | 'start'
+    | 'center'
+    | 'end'
+    | 'both'
+    | 'mediumKashida'
+    | 'distribute'
+    | 'numTab'
+    | 'highKashida'
+    | 'lowKashida'
+    | 'thaiDistribute'
+    | 'right'
+}): Paragraph => {
+  return new Paragraph({
+    spacing: spacing || {
+      after: 250,
+    },
+    alignment: textAlignment,
+    children: [
+      new TextRun({
+        text,
+        size: fontSize || 24,
+        bold,
+      }),
+    ],
+  })
+}
 
-//   try {
-//     // Create a transporter object using SMTP transport
-//     let transporter = await nodemailer.createTransport(emailCredentials)
-//     //  Read the file content
-//     // const fileContent = fs.readFileSync(path.resolve(__dirname, filePath))
+const createTable = ({ tableData: { data, headers }, passageTotals }) => {
+  const cellTextSpacing = { after: 50 }
+  const totalsRowSpacing = { before: 150, after: 50 }
+  const cellFontSize = 20
+  const noBorderStyling = {
+    top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  }
 
-//     // Read the file content asynchronously
-//     const fileContent = await fs.readFile(path.resolve(__dirname, filePath))
-//     // console.log('🚀 ~ reportRouter.post ~ fileContent:', fileContent)
+  return new Table({
+    borders: noBorderStyling,
+    width: {
+      // size: 14535,
+      // type: WidthType.DXA,
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    rows: [
+      new TableRow({
+        tableHeader: true,
 
-//     // Set up email data
-//     let mailOptions = {
-//       from: '"Document Viewer" <your-email@gmail.com>', // Sender address
-//       to: to, // List of receivers
-//       subject: subject, // Subject line
-//       text: 'Please find the attached document.', // Plain text body
-//       attachments: [
-//         {
-//           filename: path.basename(filePath),
-//           content: fileContent,
-//         },
-//       ],
-//     }
-//     console.log('🚀 ~ reportRouter.post ~ mailOptions:', mailOptions)
+        // height: { value: 40, rule: HeightRule.AUTO },
+        children: [
+          ...headers.map((headerText, index) => {
+            return new TableCell({
+              borders: noBorderStyling,
+              margins: { left: 100, right: 100 },
+              verticalAlign: 'center',
 
-//     // res.status(200).send(['Email sent: ', mailOptions])
-//     // .send(['Email sent: ', {  }])
+              children: [
+                createParagraph({
+                  text: headerText,
+                  fontSize: cellFontSize,
+                  textAlignment: index ? 'right' : 'left',
+                  spacing: cellTextSpacing,
+                }),
+              ],
+              width: {
+                size: 100 / headers.length,
+                type: WidthType.PERCENTAGE,
+              },
+            })
+          }),
+        ],
+      }),
+      ...data.map(
+        item =>
+          new TableRow({
+            children: [
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: `${Intl.DateTimeFormat('en-US', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      year: 'numeric',
+                    }).format(new Date(item.trapVisitTimeEnd))}`,
+                    fontSize: cellFontSize,
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: `${item.discharge}`,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: `${item.waterTemp}`,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: `${item.waterTurbidity ?? 'N/A'}`,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: item.totalFishWinter,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: item.totalFishSpring,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: item.totalFishFall,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: item.totalFishLateFall,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                borders: noBorderStyling,
+                children: [
+                  createParagraph({
+                    text: item.totalFishHybrid,
+                    fontSize: cellFontSize,
+                    textAlignment: 'right',
+                    spacing: cellTextSpacing,
+                  }),
+                ],
+                width: {
+                  size: 100 / headers.length,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+            ],
+          })
+      ),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              new Paragraph({
+                spacing: totalsRowSpacing,
+                children: [
+                  new TextRun({
+                    text: 'Biweekly Total ',
+                    size: 22,
+                    bold: true,
+                  }),
+                  new TextRun({
+                    text: '2',
+                    size: 18,
+                    bold: true,
+                    superScript: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              new Paragraph({
+                spacing: cellTextSpacing,
+                children: [
+                  new TextRun({
+                    text: 'Biweekly Lower 90% Confidence Interval ',
+                    size: 22,
+                    italics: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              new Paragraph({
+                spacing: cellTextSpacing,
+                children: [
+                  new TextRun({
+                    text: 'Biweekly Upper 90% Confidence Interval ',
+                    size: 22,
+                    italics: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              createParagraph({
+                text: 'Brood Year Total ',
+                fontSize: cellFontSize,
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                bold: true,
+                spacing: totalsRowSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              new Paragraph({
+                spacing: cellTextSpacing,
+                children: [
+                  new TextRun({
+                    text: 'Brood year Lower 90% Confidence Interval',
+                    size: 22,
+                    italics: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: noBorderStyling,
+            columnSpan: 4,
+            children: [
+              new Paragraph({
+                spacing: cellTextSpacing,
+                children: [
+                  new TextRun({
+                    text: 'Brood year Upper 90% Confidence Interval',
+                    size: 22,
+                    italics: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishWinter}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishSpring}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishLateFall}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: noBorderStyling,
+            children: [
+              createParagraph({
+                text: `${passageTotals.totalFishHybrid}`,
+                fontSize: cellFontSize,
+                textAlignment: 'right',
+                spacing: cellTextSpacing,
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  })
+}
 
-//     // // Send mail with defined transport object
-//     // transporter.sendMail(mailOptions, (error, info) => {
-//     //   if (error) {
-//     //     return res.status(500).send(error.toString())
-//     //   }
-//     //   res.status(200).send('Email sent: ' + info.response)
-//     // })
-//   } catch (error) {
-//     console.error(error)
-//   }
-// }
+//===========================================
+// Interfaces & Types
+//===========================================
 
 interface AttachmentInterface {
   filename: string // - filename to be reported as the name of the attached file. Use of unicode is allowed.
@@ -390,10 +1184,10 @@ interface AttachmentInterface {
 
 interface EmailParameters {
   sender?: string
-  receivers: string[] | string
+  receivers: { address: string; displayName: string }[]
   subject: string
-  body: string
-  htmlBody?: string
+  plainText: string
+  html?: string
   cc?: string[]
   bcc?: string[]
   attachments?: any //AttachmentInterface
@@ -403,140 +1197,4 @@ interface EmailParameters {
     secure: boolean
     auth: { user: string; pass: string }
   }
-}
-
-const msalConfig = {
-  auth: {
-    // clientId: process.env.CLIENT_ID,
-    clientId: process.env.JPE_SERVER_API_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.TENANT_ID}`,
-    clientSecret: process.env.JPE_SERVER_API_CLIENT_SECRET,
-  },
-}
-
-const cca = new ConfidentialClientApplication(msalConfig)
-
-const getAccessToken = async () => {
-  const result = await cca.acquireTokenByClientCredential({
-    scopes: ['https://graph.microsoft.com/.default'],
-  })
-  return result.accessToken
-}
-
-export const emailCredentials = {
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT as unknown as number,
-  secure: false, // true for 465, false for other ports
-
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-}
-
-export const sendEmail = async ({
-  sender = emailCredentials.auth.user,
-  receivers,
-  subject,
-  body,
-  htmlBody,
-  cc,
-  bcc,
-  attachments,
-  transportConfig = emailCredentials,
-}: EmailParameters) => {
-  // let transporter = nodemailer.createTransport(transportConfig)
-  const connectionString = `endpoint=https://datatackle-communication-service.unitedstates.communication.azure.com/;accesskey=4ux6nLevdPSdNPiX8kRqSuTJJt7qJvbKF6FfAJCRjEHiPqwa3TpUJQQJ99BCACULyCp1gjM9AAAAAZCSUmV4`
-  const client = new EmailClient(connectionString)
-
-  const message = {
-    senderAddress:
-      'DoNotReply@8be496df-12d6-4468-ad85-cbd102f45c43.azurecomm.net',
-    content: {
-      subject: 'Email successfully sent!',
-      plainText:
-        'Emails are being successfully sent from the Communication Service. Trying to figure out if we can modify the sender address.',
-    },
-    recipients: {
-      to: [
-        {
-          address: 'wwhitfield@flowwest.com',
-          displayName: 'Customer Name',
-        },
-        {
-          address: 'jhoang@flowwest.com',
-          displayName: 'Customer Name',
-        },
-      ],
-    },
-    attachments,
-  }
-
-  const poller = client.beginSend(message).then(poller => {
-    console.log(
-      '🚀 ~ index.ts:476 ~ poller ~ message:',
-      Object.entries(message)
-    )
-    console.log('🚀 ~ index.ts:477 ~ poller ~ poller:', poller)
-    return poller.pollUntilDone()
-  })
-
-  return
-
-  const accessToken = await getAccessToken()
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT as unknown as number,
-    secure: false, // true for 465, false for other ports
-    service: 'Outlook365',
-    auth: {
-      type: 'OAuth2',
-      user: process.env.EMAIL_USER,
-      accessToken: accessToken,
-      clientSecret: process.env.JPE_SERVER_API_CLIENT_SECRET,
-      clientId: process.env.JPE_SERVER_API_CLIENT_ID,
-    },
-    tls: {
-      ciphers: 'SSLv3',
-    },
-  })
-
-  // const transporter = nodemailer.createTransport(transportConfig)
-
-  const formattedHtml = `
-    <body style='${styles.emailBody}'>
-      <div style='${styles.contentWrapper}'>
-        <div style='${styles.header}'>
-          <img style='${styles.headerLogo}' src='https://www.usbr.gov/img/logo-white.png'/>
-          <p>Charter Tracking</p>
-        </div>
-        <div style='${styles.textWrapper}'>
-          ${htmlBody}
-        </div>
-      </div>
-    </body>
-    `
-
-  // send mail with defined transport object
-  let info = await transporter.sendMail(
-    {
-      from: sender,
-      to: receivers,
-      subject: subject,
-      text: body,
-      ...(formattedHtml && { html: formattedHtml }),
-      ...(cc && { cc: cc }),
-      ...(bcc && { bcc: bcc }),
-      ...(attachments && { attachments: attachments }),
-    },
-    (error, info) => {
-      if (error) {
-        return console.log('🚀 ~ index.ts:475 ~ error:', error)
-      }
-      console.log('🚀 ~ index.ts:477 ~ Email sent: ' + info.response)
-    }
-  )
-
-  return info
 }
