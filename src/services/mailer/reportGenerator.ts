@@ -71,7 +71,8 @@ export const generateWordDocument = async (
   const systemDate = new Date().toLocaleDateString()
   const reportStartDate = getTwoWeeksPriorDate()
   // needs to be updated based on the catch raw (we are defaulting to "EXPERT JUDGEMENT" For chinook)"
-  const programRunDesignationMethod = 'TEST RUN METHOD'
+  const programRunDesignationMethod =
+    'length-at-date criteria and expert judgement'
 
   const createParagraph = (text: string): Paragraph => {
     return new Paragraph({
@@ -264,7 +265,7 @@ export const generateWordDocument = async (
   //   })
   // })
 
-  Packer.toBuffer(doc).then((buffer) => {
+  Packer.toBuffer(doc).then(buffer => {
     fs.writeFileSync('My Document.docx', buffer)
   })
   // const base64 = await Packer.toBase64String(doc)

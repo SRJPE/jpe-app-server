@@ -164,7 +164,8 @@ export const prepareBiWeeklyReportEmailForSend = async ({
   const systemDate = new Date().toLocaleDateString()
   const reportStartDate = getTwoWeeksPriorDate()
   // needs to be updated based on the catch raw (we are defaulting to "EXPERT JUDGEMENT" For chinook)"
-  const programRunDesignationMethod = 'TEST RUN METHOD'
+  const programRunDesignationMethod =
+    'length-at-date criteria and expert judgement'
 
   const calculateHIstoricalCumulativePassage = () => {}
   const calculatePassageEstimates = () => {}
