@@ -53,7 +53,11 @@ async function getProgramCatchRawRecords(
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
     let query = knex<CatchRaw>('catchRaw')
-      .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+      .select(
+        'catchRaw.*',
+        'trapVisit.trapVisitTimeEnd',
+        'trapVisit.trapVisitTimeStart'
+      )
       .where('catchRaw.programId', programId)
       .andWhere('catchRaw.created_at', '>=', pastYear)
       .orderBy('catchRaw.id')
@@ -324,7 +328,11 @@ async function putCatchRaw(
     // Perform a join using the updated record's data
     if (updatedCatchRawRecord.length > 0) {
       updatedCatchRawRecord = await knex('catchRaw')
-        .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+        .select(
+          'catchRaw.*',
+          'trapVisit.trapVisitTimeEnd',
+          'trapVisit.trapVisitTimeStart'
+        )
         .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
         .where('catchRaw.id', updatedCatchRawRecord[0].id) // Use the updated record's ID
     }
