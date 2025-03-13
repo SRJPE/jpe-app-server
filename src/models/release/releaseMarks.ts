@@ -17,7 +17,7 @@ async function postReleaseMarks(releaseMarks): Promise<Array<ReleaseMarks>> {
 async function getReleaseMarks(): Promise<Array<ReleaseMarks>> {
   try {
     const releaseMarksRecords = await knex<ReleaseMarks>('ReleaseMarks')
-      .select('releaseMarks.*', 'release.programId')
+      .select('releaseMarks.*', 'release.programId', 'release.releasedAt')
       .join('release', 'release.id', 'releaseMarks.releaseId')
       .orderBy('id', 'desc')
     return releaseMarksRecords
