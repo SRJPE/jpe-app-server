@@ -321,6 +321,7 @@ async function putCatchRaw(
   try {
     delete catchRawObject.createdCatchRawResponse.id
     delete catchRawObject.createdCatchRawResponse.trapVisitTimeEnd
+    delete catchRawObject.createdCatchRawResponse.trapVisitTimeStart
     let updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
       .where('id', catchRawId)
       .update(catchRawObject.createdCatchRawResponse, ['*'])
@@ -396,15 +397,43 @@ async function putCatchRaw(
       )
     }
 
-    let updatedRelease = null
+    // shouldn't be able to update a release from put catch raw
+    // let updatedRelease = null
 
-    if (catchRawObject.releaseResponse) {
-      let id = catchRawObject.releaseResponse.id
-      delete catchRawObject.releaseResponse.id
-      updatedRelease = await knex('release')
-        .where('id', id)
-        .update(catchRawObject.releaseResponse, ['*'])
-    }
+    // if (catchRawObject.releaseResponse && catchRawObject.releaseResponse.id) {
+    //   let id = catchRawObject.releaseResponse.releaseId
+    //   const updatedObj = (({
+    //     programId,
+    //     releasePurposeId,
+    //     releaseSiteId,
+    //     releasedAt,
+    //     markedAt,
+    //     runHatcheryFish,
+    //     hatcheryFishWeight,
+    //     totalWildFishReleased,
+    //     totalHatcheryFishReleased,
+    //     totalWildFishDead,
+    //     totalHatcheryFishDead,
+    //     hatcheryFishForkLength,
+    //   }) => ({
+    //     programId,
+    //     releasePurposeId,
+    //     releaseSiteId,
+    //     releasedAt,
+    //     markedAt,
+    //     runHatcheryFish,
+    //     hatcheryFishWeight,
+    //     totalWildFishReleased,
+    //     totalHatcheryFishReleased,
+    //     totalWildFishDead,
+    //     totalHatcheryFishDead,
+    //     hatcheryFishForkLength,
+    //   }))(catchRawObject.releaseResponse)
+
+    //   updatedRelease = await knex('release')
+    //     .where('id', id)
+    //     .update(updatedObj, ['*'])
+    // }
 
     return {
       createdCatchRawResponse: updatedCatchRawRecord[0],
@@ -417,7 +446,7 @@ async function putCatchRaw(
       createdGeneticSamplingDataResponse: updatedGeneticSamplingData.length
         ? updatedGeneticSamplingData
         : null,
-      releaseResponse: updatedRelease || null,
+      releaseResponse: catchRawObject.releaseResponse || null,
     }
   } catch (error) {
     throw error
