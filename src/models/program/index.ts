@@ -15,6 +15,7 @@ import { postPersonnel } from '../personnel'
 import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { postProgramPersonnelTeam } from '../programPersonnelTeam'
+import { getProgramFormFields } from './formFields'
 
 const { knex } = db
 
@@ -34,6 +35,7 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
           programPersonnelTeamData,
           hatcheryInfoData,
           fishMeasureProtocolData,
+          formFieldsData,
         ] = await Promise.all([
           knex<any>('trapLocations')
             .where('programId', program.id)
@@ -71,12 +73,14 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
               'fishMeasureProtocol.*'
             )
             .orderBy('id'),
+          getProgramFormFields(program.id),
         ])
 
         program['trappingSites'] = trapLocationsData
         program['crewMembers'] = programPersonnelTeamData
         program['hatcheryInfo'] = hatcheryInfoData
         program['fishMeasureProtocol'] = fishMeasureProtocolData
+        program['programFormFields'] = formFieldsData
       })
     )
     return programs

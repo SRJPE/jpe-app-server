@@ -21,6 +21,16 @@ import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
 import { getFrequencyOptions } from '../models/program/frequency'
 import { getLengthAtDate } from '../models/trapVisit/lengthAtDate'
+import {
+  getConditionCodeOptions,
+  getVegetationCodeOptions,
+  getTideCodeOptions,
+  getFlowDirectionOptions,
+  getWeatherCodeOptions,
+  getSubstrateOptions,
+  getGearStatusOptions,
+  getYsiNumOptions,
+} from '../models/trapVisit/waterQuality'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
@@ -48,6 +58,14 @@ const getAllTrapVisitDropdowns = async () => {
     getFishConditions(),
     getLengthAtDate(),
     getRunCodeMethods(),
+    getConditionCodeOptions(),
+    getVegetationCodeOptions(),
+    getTideCodeOptions(),
+    getFlowDirectionOptions(),
+    getWeatherCodeOptions(),
+    getSubstrateOptions(),
+    getGearStatusOptions(),
+    getYsiNumOptions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -72,6 +90,14 @@ const getAllTrapVisitDropdowns = async () => {
     'fishCondition',
     'lengthAtDate',
     'runCodeMethods',
+    'conditionCode',
+    'vegetationCode',
+    'tideCode',
+    'flowDirection',
+    'weatherCode',
+    'substrate',
+    'gearStatus',
+    'ysiNum',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)
