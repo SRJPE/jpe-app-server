@@ -451,9 +451,16 @@ The report is attached as a DOCX file for your review.
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
       ],
-    }).catch(error => {
-      console.error('send error', error)
     })
+      .then(response =>
+        console.log(
+          '🚀 ~ index.ts:455 ~ awaitPacker.toBase64String ~ response:',
+          response
+        )
+      )
+      .catch(error => {
+        console.error('send error', error)
+      })
   })
 
   // To save the document to the server directory - Document Creation Testing
