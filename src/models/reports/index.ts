@@ -129,7 +129,11 @@ async function getBiWeeklyPassageSummaryRaw(programId: string): Promise<any> {
         'fc.max_fish_hybrid_fl'
       )
 
-    const tableData1 = await query
+    const trapLocations = await knex('trap_locations')
+      .select('*')
+      .where('program_id', programId)
+
+    const tableData = await query
 
     const payload = {
       trapVisits,
@@ -137,7 +141,8 @@ async function getBiWeeklyPassageSummaryRaw(programId: string): Promise<any> {
       environmentalBiWeekly,
       releaseIds,
       releaseBiWeekly,
-      tableData1,
+      trapLocations,
+      tableData,
     }
 
     return payload
@@ -159,7 +164,8 @@ async function getBiWeeklyPassageSummary(programId: string): Promise<any> {
       catchBiWeekly,
       environmentalBiWeekly,
       releaseBiWeekly,
-      tableData1,
+      trapLocations,
+      tableData,
     } = await getBiWeeklyPassageSummaryRaw(programId)
 
     return {
@@ -170,7 +176,8 @@ async function getBiWeeklyPassageSummary(programId: string): Promise<any> {
       catchBiWeekly,
       environmentalBiWeekly,
       releaseBiWeekly,
-      tableData1,
+      trapLocations,
+      tableData,
     }
   } catch (error) {
     throw error

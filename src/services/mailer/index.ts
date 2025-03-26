@@ -14,6 +14,8 @@ import {
   TextRun,
   WidthType,
 } from 'docx'
+import fs from 'fs/promises'
+import path from 'path'
 
 //===========================================
 // Mail Service Configuration
@@ -142,6 +144,7 @@ export const prepareBiWeeklyReportEmailForSend = async ({
   const [recipientFirstName, recipientLastName] = recipientName.split(' ')
 
   const program = reportContent.program.at(0)
+
   const personnelLead = reportContent.personnelLead.at(0)
   const fundingAgency = reportContent.fundingAgency.at(0)
   const {
@@ -149,10 +152,22 @@ export const prepareBiWeeklyReportEmailForSend = async ({
     catchBiWeekly,
     environmentalBiWeekly,
     releaseBiWeekly,
-    tableData1,
+    trapLocations,
+    tableData,
   } = reportContent
+  function getWeekNumber(date: Date): number {
+    const startOfYear = new Date(date.getFullYear(), 0, 1)
+    const diffInMs = date.getTime() - startOfYear.getTime()
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    return Math.ceil((diffInDays + startOfYear.getDay() + 1) / 7)
+  }
 
-  const { definition: programLeadAgency } = fundingAgency
+  // Example usage
+
+  const {
+    definition: programLeadAgency,
+    description: programLeadAgencyDescription,
+  } = fundingAgency
   const { streamName, programName } = program
   const {
     firstName: programLeadFirstName,
@@ -160,12 +175,17 @@ export const prepareBiWeeklyReportEmailForSend = async ({
     email: programLeadEmail,
     phone: programLeadPhoneNumber,
   } = personnelLead
+
   const programLead = `${programLeadFirstName} ${programLeadLastName}`
-  const systemDate = new Date().toLocaleDateString()
+  const currentDate = new Date()
+  const weekNumber = getWeekNumber(currentDate)
+  const systemDate = currentDate.toLocaleDateString()
   const reportStartDate = getTwoWeeksPriorDate()
   // needs to be updated based on the catch raw (we are defaulting to "EXPERT JUDGEMENT" For chinook)"
   const programRunDesignationMethod =
     'length-at-date criteria and expert judgement'
+
+  const trapLocationNames = trapLocations.map(location => location.trapName)
 
   const calculateHIstoricalCumulativePassage = () => {}
   const calculatePassageEstimates = () => {}
@@ -196,25 +216,25 @@ export const prepareBiWeeklyReportEmailForSend = async ({
             },
             children: [
               new TextRun({
-                text: 'FISH AND WILDLIFE SERVICE',
+                text: programLeadAgencyDescription,
                 allCaps: true,
                 size: 30,
               }),
-              new TextRun({
-                text: 'Red Bluff Fish & Wildlife Office',
-                break: 1,
-                size: 25,
-              }),
-              new TextRun({
-                text: '10950 Tyler Road, Red Bluff, California 96080',
-                break: 1,
-                size: 25,
-              }),
-              new TextRun({
-                text: '(530) 527-3043, FAX (530) 529-0292',
-                break: 1,
-                size: 25,
-              }),
+              // new TextRun({
+              //   text: 'Office Name',
+              //   break: 1,
+              //   size: 25,
+              // }),
+              // new TextRun({
+              //   text: 'Office Address',
+              //   break: 1,
+              //   size: 25,
+              // }),
+              // new TextRun({
+              //   text: 'Office Phone Number',
+              //   break: 1,
+              //   size: 25,
+              // }),
             ],
           }),
 
@@ -232,19 +252,25 @@ export const prepareBiWeeklyReportEmailForSend = async ({
           }),
           createParagraph({ text: 'To: Interested Parties' }),
           createParagraph({
-            text: `From: ${programLead}, ${programLeadAgency}`,
+            text: `From: ${programLead}`,
           }),
           createParagraph({
-            text: `Subject: Biweekly Report (${reportStartDate} - ${systemDate})`,
+            text: `Subject: Biweekly Report`,
           }),
           createParagraph({
             text: `Please find attached preliminary daily estimates of passage, 90% confidence intervals, and fork length ranges of unmarked juvenile salmonids sampled at ${streamName} for the period ${reportStartDate} through ${systemDate}. Race designation was assigned using ${programRunDesignationMethod}.`,
+          }),
+
+          createParagraph({
+            text: `Mean cumulative weekly passage of winter Chinook thru ${systemDate} (week ${weekNumber}) for the last 20 years of passage data is {VALUE_1}% ± {VALUE_2}%.`,
           }),
           createParagraph({
             text: `Please note that data contained in these reports is subject to revision as this data is preliminary and undergoing QA/QC procedures.`,
           }),
           createParagraph({
-            text: `If you have any questions, please feel free to contact me at ${programLeadPhoneNumber}, ${programLeadEmail}.`,
+            text: `If you have any questions, please feel free to contact me at ${
+              programLeadPhoneNumber ? `${programLeadPhoneNumber}, ` : ''
+            }${programLeadEmail}.`,
           }),
           // createTable(),
         ],
@@ -267,15 +293,19 @@ export const prepareBiWeeklyReportEmailForSend = async ({
         children: [
           createParagraph({
             fontSize: 20,
-            text: `Table 1.─ Historical mean cumulative passage for week [System week] and run. Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
+            text: `Table 1. — Historical mean cumulative passage for week ${weekNumber} and run. Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary-screw traps at ${streamName} (${trapLocationNames.join(
+              ', '
+            )}) for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
           }),
           createParagraph({
             fontSize: 20,
-            text: `Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at Red Bluff Diversion Dam (RK391), Sacramento River, CA, for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
+            text: `Preliminary estimates of passage by brood-year (BY) and run for unmarked juvenile Chinook salmon and steelhead trout captured by rotary- screw traps at ${streamName} (${trapLocationNames.join(
+              ', '
+            )}) for the dates listed below. Results include estimated passage, peak river discharge volume, water temperature, turbidity, and fork length (mm) range in parentheses. A dash (-) indicates that sampling was not conducted on that date.`,
           }),
           createTable({
             tableData: {
-              data: tableData1,
+              data: tableData,
               headers: [
                 'Date',
                 'Discharge volume (cfs)',
@@ -288,7 +318,7 @@ export const prepareBiWeeklyReportEmailForSend = async ({
                 'BY22 RBT',
               ],
             },
-            passageTotals: calculatePassageTotals(tableData1),
+            passageTotals: calculatePassageTotals(tableData),
           }),
           new Paragraph({
             spacing: { before: 100 },
@@ -299,30 +329,6 @@ export const prepareBiWeeklyReportEmailForSend = async ({
             children: [
               new TextRun({
                 text: '1',
-                size: 16,
-                superScript: true,
-              }),
-              new TextRun({
-                text: ` Peak daily discharge values do not account for diversions at RBDD and only represent peak flows registered at the Bend Bridge Gauging station `,
-                size: 20,
-              }),
-              new ExternalHyperlink({
-                children: [
-                  new TextRun({
-                    text: `(http://cdec2.water.ca.gov/cgi-progs/queryFx?bnd)`,
-                    style: 'Hyperlink',
-                    size: 20,
-                  }),
-                ],
-                link: 'http://cdec2.water.ca.gov/cgi-progs/queryFx?bnd',
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { before: 100 },
-            children: [
-              new TextRun({
-                text: '2',
                 size: 16,
                 superScript: true,
               }),
@@ -432,12 +438,12 @@ The report is attached as a DOCX file for your review.
           displayName: recipientName,
         },
       ],
-      subject: `Biweekly Report for [Program Name] – [Date Range]`,
+      subject: `Biweekly Report for ${programName} | ${reportStartDate} - ${systemDate}`,
       plainText: view.plainText,
       html: view.html,
       attachments: [
         {
-          name: `${program.programName.split(' ').join('-')}_${reportStartDate
+          name: `${programName.split(' ').join('-')}_bi-weekly_${systemDate
             .split('/')
             .join('-')}.docx`,
           contentInBase64: base64String,
@@ -807,7 +813,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishWinter}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -818,7 +824,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishSpring}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -829,7 +835,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -840,7 +846,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishLateFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -851,7 +857,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishHybrid}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -882,7 +888,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishWinter}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -893,7 +899,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishSpring}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -904,7 +910,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -915,7 +921,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishLateFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -926,7 +932,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishHybrid}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -943,7 +949,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             children: [
               createParagraph({
                 text: 'Brood Year Total ',
-                fontSize: cellFontSize,
+                fontSize: 22,
                 bold: true,
                 spacing: totalsRowSpacing,
               }),
@@ -1033,7 +1039,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishWinter}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1044,7 +1050,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishSpring}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1055,7 +1061,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1066,7 +1072,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishLateFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1077,7 +1083,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishHybrid}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1108,7 +1114,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishWinter}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1119,7 +1125,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishSpring}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1130,7 +1136,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1141,7 +1147,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishLateFall}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
@@ -1152,7 +1158,7 @@ const createTable = ({ tableData: { data, headers }, passageTotals }) => {
             borders: noBorderStyling,
             children: [
               createParagraph({
-                text: `${passageTotals.totalFishHybrid}`,
+                text: `not calculated`,
                 fontSize: cellFontSize,
                 textAlignment: 'right',
                 spacing: cellTextSpacing,
