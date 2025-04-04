@@ -121,6 +121,9 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
 
     const trapLocations = await knex<any>('trapLocations')
       .select('*')
+      .leftJoin('equipment', 'equipment.id', 'trapLocations.equipmentId')
+      .select('trapLocations.*', 'equipment.definition')
+      .orderBy('trapLocations.id')
       .whereIn('programId', programIds)
 
     const trapLocationIds = trapLocations.map(trapLocation => trapLocation.id)

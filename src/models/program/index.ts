@@ -39,8 +39,9 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
         ] = await Promise.all([
           knex<any>('trapLocations')
             .where('programId', program.id)
-            .select('*')
-            .orderBy('id'),
+            .leftJoin('equipment', 'equipment.id', 'trapLocations.equipmentId')
+            .select('trapLocations.*', 'equipment.definition')
+            .orderBy('trapLocations.id'),
           knex<any>('programPersonnelTeam')
             .join(
               'personnel',
@@ -85,6 +86,7 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
     )
     return programs
   } catch (error) {
+    console.log('errr', error)
     throw error
   }
 }
