@@ -175,9 +175,11 @@ async function createTrapVisit(trapVisitValues): Promise<{
       await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
 
     const visitCrewPromises = []
-    trapVisitCrew.forEach(async personnelId => {
+    trapVisitCrew.forEach(async crewMember => {
       const trapVisitCrewPayload = {
-        personnelId,
+        personnelId: crewMember.personnelId,
+        dataRecorder: crewMember.dataRecorder,
+        fieldCheck: crewMember.fieldCheck,
         trapVisitId: createdTrapVisit.id,
       }
       visitCrewPromises.push(
