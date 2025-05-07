@@ -163,16 +163,16 @@ async function createTrapVisit(trapVisitValues): Promise<{
       trapCoordinatesPayload
     )
     // insert trapVisitEnvironmental
-    const trapVisitEnvironmentalPayload = trapVisitEnvironmental?.map(
-      measureObject => {
-        if (measureObject.measureValueNumeric === undefined) return
+    const trapVisitEnvironmentalPayload = []
 
-        return {
-          trapVisitId: createdTrapVisit.id,
-          ...measureObject,
-        }
-      }
-    )
+    trapVisitEnvironmental?.forEach(measureObject => {
+      if (measureObject.measureValueNumeric === undefined) return
+
+      trapVisitEnvironmentalPayload.push({
+        trapVisitId: createdTrapVisit.id,
+        ...measureObject,
+      })
+    })
     const createdTrapVisitEnvironmentalResponse =
       await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
 
