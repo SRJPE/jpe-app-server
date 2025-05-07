@@ -17,6 +17,7 @@ import {
   putTrapVisit,
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
+import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -89,6 +90,35 @@ export default (mainRouter: Router) => {
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.put('/:trapVisitId/environmental', async (req, res) => {
+    try {
+      const { trapVisitId } = req.params
+      const { waterTurbidity } = req.body
+
+      const trapVisitEnvironmentalResponse = await putTrapVisitWaterTurbidity({
+        trapVisitId,
+        waterTurbidity,
+      })
+
+      if (trapVisitEnvironmentalResponse) {
+        res.status(200).send({
+          status: 200,
+          trapVisitId,
+          waterTurbidity,
+        })
+      } else {
+        res.status(400).send({
+          status: 400,
+          trapVisitId,
+          waterTurbidity,
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      res.status(400).send({ status: 400, error })
     }
   })
 

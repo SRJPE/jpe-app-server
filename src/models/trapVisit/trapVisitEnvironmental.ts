@@ -19,4 +19,22 @@ async function postTrapVisitEnvironmental(
   }
 }
 
-export { postTrapVisitEnvironmental }
+async function putTrapVisitWaterTurbidity({ trapVisitId, waterTurbidity }) {
+  try {
+    const updatedTrapVisitEnvironmentalResponse =
+      await knex<TrapVisitEnvironmental>('trapVisitEnvironmental')
+        .where('trapVisitId', trapVisitId)
+        .andWhere('measureName', 'water turbidity')
+        .andWhere('measureValueNumeric', null)
+        .update({
+          measureValueNumeric: waterTurbidity,
+          measureValueText: waterTurbidity,
+        })
+
+    return updatedTrapVisitEnvironmentalResponse
+  } catch (error) {
+    throw error
+  }
+}
+
+export { postTrapVisitEnvironmental, putTrapVisitWaterTurbidity }
