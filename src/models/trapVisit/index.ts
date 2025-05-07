@@ -165,6 +165,8 @@ async function createTrapVisit(trapVisitValues): Promise<{
     // insert trapVisitEnvironmental
     const trapVisitEnvironmentalPayload = trapVisitEnvironmental?.map(
       measureObject => {
+        if (measureObject.measureValueNumeric === undefined) return
+
         return {
           trapVisitId: createdTrapVisit.id,
           ...measureObject,
