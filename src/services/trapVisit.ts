@@ -14,7 +14,7 @@ import db from '../db'
 import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotProcessed'
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
-import { getTaxon } from '../models/trapVisit/taxon'
+import { getTaxon, getTaxonWithAbbreviations } from '../models/trapVisit/taxon'
 import { getFishConditions } from '../models/trapVisit/fishCondition'
 import { getReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
@@ -39,7 +39,8 @@ const getAllTrapVisitDropdowns = async () => {
     getTrapFunctionalities(),
     getWhyTrapNotFunctioning(),
     getTrapStatusAtEnd(),
-    getTaxon(),
+    // getTaxon(),
+    getTaxonWithAbbreviations(),
     getFishProcessedOptions(),
     getWhyFishNotProcessedOptions(),
     getLifeStages(),
