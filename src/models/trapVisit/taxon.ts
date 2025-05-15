@@ -17,26 +17,23 @@ async function getTaxon(): Promise<Array<DropdownOption>> {
 //get taxon abbreviations
 async function getTaxonWithAbbreviations(): Promise<Array<any>> {
   try {
-    const taxonAbbreviations = await knex('taxonAbbreviation')
-      .join('taxon', 'taxon.code', '=', 'taxonAbbreviation.taxonCode')
-      .select('taxonAbbreviation.*', 'taxon.commonname')
+    const taxonAbbreviations = await knex('taxonAbbreviation').select('*')
 
     const taxon = await knex('taxon').select('*')
 
-    const taxonWithAbbreviations = taxon.reduce(
-      (taxonArray, currentTaxonRecord) => {
-        const taxonAbbreviationArray = taxonAbbreviations
-          .filter(taxonAbbreviation => {
-            return taxonAbbreviation.taxonCode === currentTaxonRecord.code
-          })
-          .map(abbr => abbr.abbreviationCode)
+    const taxonAbbreviationMap = taxonAbbreviations.reduce((map, abbr) => {
+      if (!map[abbr.taxonCode]) {
+        map[abbr.taxonCode] = []
+      }
+      map[abbr.taxonCode].push(abbr.abbreviationCode)
+      return map
+    }, {} as Record<string, string[]>)
 
-        currentTaxonRecord.taxonAbbreviations = taxonAbbreviationArray
-        taxonArray.push(currentTaxonRecord)
-        return taxonArray
-      },
-      []
-    )
+    const taxonWithAbbreviations = taxon.map(currentTaxonRecord => {
+      currentTaxonRecord.taxonAbbreviations =
+        taxonAbbreviationMap[currentTaxonRecord.code] || []
+      return currentTaxonRecord
+    })
 
     return taxonWithAbbreviations
   } catch (error) {
