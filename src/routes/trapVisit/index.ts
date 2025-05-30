@@ -18,13 +18,14 @@ import {
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
+import { isAuthorized } from '../../middleware/auth-middleware'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
 export default (mainRouter: Router) => {
   mainRouter.use('/trap-visit', trapVisitRouter)
 
-  trapVisitRouter.post('/', async (req, res) => {
+  trapVisitRouter.post('/', isAuthorized(), async (req, res) => {
     try {
       const trapVisitValues = req.body
       const createdTrapVisit = await postTrapVisit(trapVisitValues)
@@ -57,16 +58,20 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapVisitRouter.get('/program/:programId', async (req, res) => {
-    try {
-      const { programId } = req.params
-      const trapVisits = await getProgramTrapVisits(programId)
-      res.status(200).send(trapVisits)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
+  trapVisitRouter.get(
+    '/program/:programId',
+    isAuthorized(), // Middleware function
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const trapVisits = await getProgramTrapVisits(programId)
+        res.status(200).send(trapVisits)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
     }
-  })
+  )
 
   trapVisitRouter.put('/:trapVisitId', async (req, res) => {
     try {
@@ -80,18 +85,22 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapVisitRouter.get('/visit-setup/default/:personnelId', async (req, res) => {
-    try {
-      const { personnelId } = req.params
-      const trapSetupDefaultValues = await getVisitSetupDefaultValues(
-        personnelId
-      )
-      res.status(200).send(trapSetupDefaultValues)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
+  trapVisitRouter.get(
+    '/visit-setup/default/:personnelId',
+    isAuthorized(), // Middleware function
+    async (req, res) => {
+      try {
+        const { personnelId } = req.params
+        const trapSetupDefaultValues = await getVisitSetupDefaultValues(
+          personnelId
+        )
+        res.status(200).send(trapSetupDefaultValues)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
     }
-  })
+  )
 
   trapVisitRouter.put('/:trapVisitId/environmental', async (req, res) => {
     try {

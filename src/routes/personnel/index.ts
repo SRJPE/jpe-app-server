@@ -6,6 +6,7 @@ import {
   updatePersonnel,
   getPersonnelByAzureUid,
 } from '../../models/personnel'
+import { isAuthorized } from '../../middleware/auth-middleware'
 
 const personnelRouter = Router({ mergeParams: true })
 
@@ -36,7 +37,7 @@ export default (mainRouter: Router) => {
   })
 
   // GET
-  personnelRouter.get('/azure/:azureUid', async (req, res) => {
+  personnelRouter.get('/azure/:azureUid', isAuthorized(), async (req, res) => {
     try {
       const { azureUid } = req.params
       const personnel = await getPersonnelByAzureUid(azureUid)

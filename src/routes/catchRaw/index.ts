@@ -7,6 +7,7 @@ import {
   postCatchRaw,
   putCatchRaw,
 } from '../../models/catchRaw'
+import { isAuthorized } from '../../middleware/auth-middleware'
 
 const catchRawRouter = Router({ mergeParams: true })
 
@@ -35,21 +36,25 @@ export default (mainRouter: Router) => {
     }
   })
 
-  catchRawRouter.get('/program/:programId', async (req, res) => {
-    try {
-      const { programId } = req.params
-      const { limit } = req.query
-      const parsedLimit = limit ? Number(limit) : undefined
-      const catchRawRecords = await getProgramCatchRawRecords(
-        programId,
-        parsedLimit
-      )
-      res.status(200).send(catchRawRecords)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
+  catchRawRouter.get(
+    '/program/:programId',
+    isAuthorized(),
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const { limit } = req.query
+        const parsedLimit = limit ? Number(limit) : undefined
+        const catchRawRecords = await getProgramCatchRawRecords(
+          programId,
+          parsedLimit
+        )
+        res.status(200).send(catchRawRecords)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
     }
-  })
+  )
 
   catchRawRouter.post('/', async (req, res) => {
     try {

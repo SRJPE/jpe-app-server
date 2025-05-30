@@ -20,7 +20,9 @@ import { getProgramFormFields } from './formFields'
 const { knex } = db
 
 // get programs associated with personnel
-async function getPersonnelPrograms(personnelId: string): Promise<any> {
+async function getPersonnelPrograms(
+  personnelId: string | number
+): Promise<any> {
   try {
     const programs = (await knex<any>('programPersonnelTeam')
       .join('program', 'program.id', 'programPersonnelTeam.programId')
