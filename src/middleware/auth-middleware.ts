@@ -29,7 +29,6 @@ export async function isAuthenticated(
           }
 
           const azureUid = info?.sub
-          console.log('Azure UID:', azureUid)
           res.locals = {
             ...res.locals,
             azureUid,
