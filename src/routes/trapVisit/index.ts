@@ -37,7 +37,7 @@ export default (mainRouter: Router) => {
   })
 
   // GET /trap-visit/dropdowns
-  trapVisitRouter.get('/dropdowns', async (req, res) => {
+  trapVisitRouter.get('/dropdowns', isAuthorized(), async (req, res) => {
     try {
       const trapVisitDropdowns = await getAllTrapVisitDropdowns()
       res.status(200).send(trapVisitDropdowns)

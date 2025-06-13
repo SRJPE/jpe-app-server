@@ -20,7 +20,10 @@ import { getReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
 import { getListingUnitOptions } from '../models/program/listingUnit'
 import { getFrequencyOptions } from '../models/program/frequency'
-import { getLengthAtDate } from '../models/trapVisit/lengthAtDate'
+import {
+  getLengthAtDateRiver,
+  getLengthAtDateDelta,
+} from '../models/trapVisit/lengthAtDate'
 import {
   getConditionCodeOptions,
   getVegetationCodeOptions,
@@ -35,6 +38,7 @@ const { knex } = db
 
 const getAllTrapVisitDropdowns = async () => {
   const dropdowns = {}
+
   const requestPromises = [
     getTrapFunctionalities(),
     getWhyTrapNotFunctioning(),
@@ -57,7 +61,8 @@ const getAllTrapVisitDropdowns = async () => {
     getListingUnitOptions(),
     getFrequencyOptions(),
     getFishConditions(),
-    getLengthAtDate(),
+    getLengthAtDateRiver(),
+    getLengthAtDateDelta(),
     getRunCodeMethods(),
     getConditionCodeOptions(),
     getVegetationCodeOptions(),
@@ -89,7 +94,8 @@ const getAllTrapVisitDropdowns = async () => {
     'listingUnit',
     'frequency',
     'fishCondition',
-    'lengthAtDate',
+    'lengthAtDateRiver',
+    'lengthAtDateDelta',
     'runCodeMethods',
     'conditionCode',
     'vegetationCode',
