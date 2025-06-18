@@ -8,7 +8,10 @@ import {
   Program,
   TrapLocations,
 } from '../../interfaces'
-import { postFishMeasureProtocol } from '../fishMeasureProtocol'
+import {
+  postFishMeasureProtocol,
+  getFishMeasureProtocol,
+} from '../fishMeasureProtocol'
 import { postHatcheryInfo } from '../hatcheryInfo'
 import { postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
@@ -64,18 +67,7 @@ async function getPersonnelPrograms(
             .where('programId', program.id)
             .select('*')
             .orderBy('id'),
-          knex<any>('fishMeasureProtocol')
-            .where('programId', program.id)
-            .join('taxon', 'taxon.code', 'fishMeasureProtocol.species')
-            .join('lifeStage', 'lifeStage.id', 'fishMeasureProtocol.lifeStage')
-            .join('run', 'run.id', 'fishMeasureProtocol.run')
-            .select(
-              'taxon.commonname',
-              'lifeStage.definition as lifeStageName',
-              'run.definition as runName',
-              'fishMeasureProtocol.*'
-            )
-            .orderBy('id'),
+          getFishMeasureProtocol(program.id),
           getProgramFormFields(program.id),
         ])
 
