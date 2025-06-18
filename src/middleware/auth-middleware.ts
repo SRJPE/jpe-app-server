@@ -55,7 +55,6 @@ export function isAuthorized() {
     const tokenProgramIds = tokenPrograms.map(program => program.id)
 
     if (req.params.azureUid && req.params.azureUid !== azureUid) {
-      console.log('Azure UID mismatch:', azureUid, req.params.azureUid)
       return res
         .status(403)
         .send(`Access to the requested resource is forbidden for ${email}`)
@@ -86,6 +85,12 @@ export function isAuthorized() {
     // if (!role) return res.status(403).send()
 
     // if (options.hasRole.includes(role)) return next()
+
+    res.locals = {
+      ...res.locals,
+      personnelPrograms: tokenPrograms,
+      personnelProgramIds: tokenProgramIds,
+    }
 
     return next()
   }
