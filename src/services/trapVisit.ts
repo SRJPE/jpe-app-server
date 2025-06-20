@@ -14,7 +14,10 @@ import db from '../db'
 import { getWhyFishNotProcessedOptions } from '../models/trapVisit/whyFishNotProcessed'
 import { getWhyTrapNotFunctioning } from '../models/trapVisit/whyTrapNotFunctioning'
 import { getTrapStatusAtEnd } from '../models/trapVisit/trapStatusAtEnd'
-import { getTaxon, getTaxonWithAbbreviations } from '../models/trapVisit/taxon'
+import {
+  getTaxon,
+  getProgramTaxonAbbreviations,
+} from '../models/trapVisit/taxon'
 import { getFishConditions } from '../models/trapVisit/fishCondition'
 import { getReleaseMarks } from '../models/release/releaseMarks'
 import { getFundingAgencyOptions } from '../models/program/agency'
@@ -33,14 +36,14 @@ import {
 } from '../models/trapVisit/waterQuality'
 const { knex } = db
 
-const getAllTrapVisitDropdowns = async () => {
+const getAllTrapVisitDropdowns = async (userId: string) => {
   const dropdowns = {}
   const requestPromises = [
     getTrapFunctionalities(),
     getWhyTrapNotFunctioning(),
     getTrapStatusAtEnd(),
-    // getTaxon(),
-    getTaxonWithAbbreviations(),
+    getTaxon(),
+    getProgramTaxonAbbreviations(userId),
     getFishProcessedOptions(),
     getWhyFishNotProcessedOptions(),
     getLifeStages(),
@@ -73,6 +76,7 @@ const getAllTrapVisitDropdowns = async () => {
     'whyTrapNotFunctioning',
     'trapStatusAtEnd',
     'taxon',
+    'programTaxonAbbreviation',
     'fishProcessed',
     'whyFishNotProcessed',
     'lifeStage',
