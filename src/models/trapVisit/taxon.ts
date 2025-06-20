@@ -1,5 +1,6 @@
 import db from '../../db'
 import { DropdownOption } from '../../interfaces'
+import program from '../../routes/program'
 
 const { knex } = db
 
@@ -23,55 +24,34 @@ async function getProgramTaxonAbbreviations(userId): Promise<Array<any>> {
   const programIds = userProgramsIds.map(row => row.programId)
 
   try {
-    // const programTaxonAbbreviations = await knex('programTaxonAbbreviation')
-    //   .join('program', 'program.id', 'programTaxonAbbreviation.programId')
-    //   .join(
-    //     'taxonAbbreviation',
-    //     'taxonAbbreviation.id',
-    //     'programTaxonAbbreviation.taxonAbbreviationId'
-    //   )
-    //   .fullOuterJoin('taxon', 'taxon.code', 'taxonAbbreviation.taxonCode')
-    //   .select(
-    //     'programTaxonAbbreviation.*',
-    //     'taxon.commonname as commonname',
-    //     'taxonAbbreviation.*'
-    //   )
-
-    // const programId = PASS IN PROGRAM ID AS ARG
-
-    const results = await knex('taxon as t')
-      .leftJoin(
-        knex('taxon_abbreviation as ta')
-          .join(
-            'program_taxon_abbreviation as pta',
-            'ta.id',
-            'pta.taxon_abbreviation_id'
+    const results = await Promise.all(
+      programIds?.map(async (programId: number) => {
+        const result = await knex('taxon as t')
+          .leftJoin(
+            knex('taxon_abbreviation as ta')
+              .join(
+                'program_taxon_abbreviation as pta',
+                'ta.id',
+                'pta.taxon_abbreviation_id'
+              )
+              .where('pta.program_id', programId)
+              .select('ta.*')
+              .as('ta'),
+            't.code',
+            'ta.taxon_code'
           )
-          .select('ta.*', 'pta.program_id')
-          .as('ta'),
-        't.code',
-        'ta.taxon_code'
-      )
-      .select('ta.abbreviation_code', 'ta.program_id', 't.*')
+          .select('ta.abbreviation_code', 't.*')
+        return result
+      })
+    )
 
-    // const taxon = await knex('taxon').select('*')
+    const resultsObj = {} as any
 
-    // const taxonAbbreviationMap = taxonAbbreviations.reduce((map, abbr) => {
-    //   if (!map[abbr.taxonCode]) {
-    //     map[abbr.taxonCode] = []
-    //   }
-    //   map[abbr.taxonCode].push(abbr.abbreviationCode)
-    //   return map
-    // }, {} as Record<string, string[]>)
+    programIds.forEach((programId: number, index: number) => {
+      resultsObj[programId] = results[index]
+    })
 
-    // const taxonWithAbbreviations = taxon.map(currentTaxonRecord => {
-    //   currentTaxonRecord.taxonAbbreviations =
-    //     taxonAbbreviationMap[currentTaxonRecord.code] || []
-    //   return currentTaxonRecord
-    // })
-
-    // return taxonWithAbbreviations
-    return results
+    return resultsObj
   } catch (error) {
     console.log('🚀 ~ taxon.ts:54 ~ getTaxonWithAbbreviations ~ error:', error)
 
