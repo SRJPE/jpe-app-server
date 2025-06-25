@@ -1,5 +1,6 @@
 import db from '../../db'
 import { DropdownOption } from '../../interfaces'
+import program from '../../routes/program'
 
 const { knex } = db
 
@@ -15,30 +16,47 @@ async function getTaxon(): Promise<Array<DropdownOption>> {
 }
 
 //get taxon abbreviations
-async function getTaxonWithAbbreviations(): Promise<Array<any>> {
+async function getProgramTaxonAbbreviations(userId): Promise<Array<any>> {
+  const userProgramsIds = await knex('programPersonnelTeam')
+    .where('personnelId', userId)
+    .select('programId')
+
+  const programIds = userProgramsIds.map(row => row.programId)
+
   try {
-    const taxonAbbreviations = await knex('taxonAbbreviation').select('*')
+    const results = await Promise.all(
+      programIds?.map(async (programId: number) => {
+        const result = await knex('taxon as t')
+          .leftJoin(
+            knex('taxon_abbreviation as ta')
+              .join(
+                'program_taxon_abbreviation as pta',
+                'ta.id',
+                'pta.taxon_abbreviation_id'
+              )
+              .where('pta.program_id', programId)
+              .select('ta.*')
+              .as('ta'),
+            't.code',
+            'ta.taxon_code'
+          )
+          .select('ta.abbreviation_code', 't.*')
+        return result
+      })
+    )
 
-    const taxon = await knex('taxon').select('*')
+    const resultsObj = {} as any
 
-    const taxonAbbreviationMap = taxonAbbreviations.reduce((map, abbr) => {
-      if (!map[abbr.taxonCode]) {
-        map[abbr.taxonCode] = []
-      }
-      map[abbr.taxonCode].push(abbr.abbreviationCode)
-      return map
-    }, {} as Record<string, string[]>)
-
-    const taxonWithAbbreviations = taxon.map(currentTaxonRecord => {
-      currentTaxonRecord.taxonAbbreviations =
-        taxonAbbreviationMap[currentTaxonRecord.code] || []
-      return currentTaxonRecord
+    programIds.forEach((programId: number, index: number) => {
+      resultsObj[programId] = results[index]
     })
 
-    return taxonWithAbbreviations
+    return resultsObj
   } catch (error) {
+    console.log('🚀 ~ taxon.ts:54 ~ getTaxonWithAbbreviations ~ error:', error)
+
     throw error
   }
 }
 
-export { getTaxon, getTaxonWithAbbreviations }
+export { getTaxon, getProgramTaxonAbbreviations }
