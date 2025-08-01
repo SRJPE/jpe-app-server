@@ -60,7 +60,7 @@ async function getProgramCatchRawRecords(
       )
       .where('catchRaw.programId', programId)
       .andWhere('catchRaw.created_at', '>=', pastYear)
-      .orderBy('catchRaw.id')
+      .orderBy('catchRaw.id', 'desc')
       .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
 
     if (limit) {
@@ -82,17 +82,41 @@ async function getProgramCatchRawRecords(
       catchFishCondition,
     ] = await Promise.all([
       knex<MarkAppliedI>('markApplied')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'markApplied.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .join('catchRaw', 'markApplied.catchRawId', 'catchRaw.id')
+        .whereIn('catchRawId', catchRawIds)
+        .andWhere('catchRaw.created_at', '>=', pastYear),
       knex<ExistingMarksI>('existingMarks')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'existingMarks.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .join('catchRaw', 'existingMarks.catchRawId', 'catchRaw.id')
+        .whereIn('catchRawId', catchRawIds)
+        .andWhere('catchRaw.created_at', '>=', pastYear),
       knex<GeneticSamplingDataI>('geneticSamplingData')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'geneticSamplingData.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .join('catchRaw', 'geneticSamplingData.catchRawId', 'catchRaw.id')
+        .whereIn('catchRawId', catchRawIds)
+        .andWhere('catchRaw.created_at', '>=', pastYear),
       knex<CatchFishConditionI>('catchFishCondition')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'catchFishCondition.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .whereIn('catchRawId', catchRawIds)
+        .join('catchRaw', 'catchFishCondition.catchRawId', 'catchRaw.id')
+        .andWhere('catchRaw.created_at', '>=', pastYear),
     ])
 
     // all release ids that are found within the existing marks of a program
