@@ -37,6 +37,10 @@ import {
   getGearStatusOptions,
   getYsiNumOptions,
 } from '../models/trapVisit/waterQuality'
+import {
+  getTakeOptions,
+  getConditionOptions,
+} from '../models/catchRaw/geneticSamplingData'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async (userId: string) => {
@@ -75,6 +79,8 @@ const getAllTrapVisitDropdowns = async (userId: string) => {
     getSubstrateOptions(),
     getGearStatusOptions(),
     getYsiNumOptions(),
+    getTakeOptions(),
+    getConditionOptions(),
   ]
   const keys = [
     'trapFunctionality',
@@ -109,6 +115,8 @@ const getAllTrapVisitDropdowns = async (userId: string) => {
     'substrate',
     'gearStatus',
     'ysiNum',
+    'take',
+    'condition',
   ]
 
   const requestsResult = await Promise.allSettled(requestPromises)

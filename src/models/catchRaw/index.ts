@@ -103,9 +103,13 @@ async function getProgramCatchRawRecords(
         .select(
           'geneticSamplingData.*',
           'catchRaw.createdAt as catchRawCreatedAt',
-          'catchRaw.programId'
+          'catchRaw.programId',
+          'take.code as takeCode',
+          'condition.code as conditionCode'
         )
         .join('catchRaw', 'geneticSamplingData.catchRawId', 'catchRaw.id')
+        .leftJoin('take', 'geneticSamplingData.take', 'take.id')
+        .leftJoin('condition', 'geneticSamplingData.condition', 'condition.id')
         .whereIn('catchRawId', catchRawIds)
         .andWhere('catchRaw.created_at', '>=', pastYear),
       knex<CatchFishConditionI>('catchFishCondition')
