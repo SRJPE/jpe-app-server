@@ -146,7 +146,7 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
         (
           SELECT json_agg(taxon_sub_query ORDER BY taxon_sub_query.created_at DESC)
           FROM (
-            SELECT DISTINCT ON (cr.taxon_code) cr.taxon_code, t.commonname, t.latinname
+            SELECT DISTINCT ON (cr.taxon_code) cr.taxon_code, t.commonname, t.latinname, cr.created_at
             FROM catch_raw cr
             JOIN trap_visit tv ON tv.id = cr.trap_visit_id
             JOIN taxon t ON t.code = cr.taxon_code
