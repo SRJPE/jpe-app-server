@@ -17,4 +17,22 @@ async function postGeneticSamplingData(
   }
 }
 
-export { postGeneticSamplingData }
+async function getTakeOptions(): Promise<Array<any>> {
+  try {
+    const takeRecords = await knex<any>('take').select('*')
+    return takeRecords
+  } catch (error) {
+    throw error
+  }
+}
+
+async function getConditionOptions(): Promise<Array<any>> {
+  try {
+    const conditionRecords = await knex<any>('condition').select('*')
+    return conditionRecords
+  } catch (error) {
+    throw error
+  }
+}
+
+export { postGeneticSamplingData, getTakeOptions, getConditionOptions }
