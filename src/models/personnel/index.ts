@@ -129,12 +129,28 @@ async function updatePersonnel({
   }
 }
 
+async function updatePersonnelById({
+  id,
+  personnelValues,
+}): Promise<Personnel> {
+  try {
+    const updatedPersonnel = await knex<Personnel>('personnel')
+      .where('id', id)
+      .update(personnelValues, ['*'])
+    return updatedPersonnel[0]
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
 export {
   getPersonnel,
   getAllPersonnel,
   getPersonnelByAzureUid,
   postPersonnel,
   updatePersonnel,
+  updatePersonnelById,
   addPersonnelToProgramTeam,
   removePersonnelFromProgramTeam,
 }
