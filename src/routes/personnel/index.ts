@@ -7,6 +7,7 @@ import {
   getPersonnelByAzureUid,
   addPersonnelToProgramTeam,
   removePersonnelFromProgramTeam,
+  updatePersonnelById,
 } from '../../models/personnel'
 import { isAuthorized } from '../../middleware/auth-middleware'
 
@@ -108,6 +109,20 @@ export default (mainRouter: Router) => {
       const personnelValues = req.body
       const updatedPersonnel = await updatePersonnel({
         azureUid,
+        personnelValues,
+      })
+      res.status(200).send(updatedPersonnel)
+    } catch (error) {
+      res.status(400).send(error)
+    }
+  })
+
+  personnelRouter.put('/id/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const personnelValues = req.body
+      const updatedPersonnel = await updatePersonnelById({
+        id,
         personnelValues,
       })
       res.status(200).send(updatedPersonnel)

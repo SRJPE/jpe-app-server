@@ -60,7 +60,9 @@ async function getPersonnelPrograms(
               'personnel.lastName',
               'personnel.email',
               'personnel.role',
-              'personnel.agencyId'
+              'personnel.agencyId',
+              'personnel.azureUid',
+              'personnel.phone'
             )
             .orderBy('id'),
           knex<any>('hatcheryInfo')
