@@ -63,10 +63,15 @@ async function postPersonnel(personnelValues): Promise<Personnel[]> {
       delete personnelValues.programId
     }
 
-    const createdPersonnel = await knex<Personnel>('personnel').insert(
-      personnelValues,
-      ['*']
-    )
+    let createdPersonnel
+    if (personnelValues.id) {
+      createdPersonnel = [personnelValues]
+    } else {
+      createdPersonnel = await knex<Personnel>('personnel').insert(
+        personnelValues,
+        ['*']
+      )
+    }
 
     if (programId) {
       await Promise.all(
@@ -86,6 +91,30 @@ async function postPersonnel(personnelValues): Promise<Personnel[]> {
   }
 }
 
+async function addPersonnelToProgramTeam({ programId, personnelId }) {
+  try {
+    const programPersonnel = await postProgramPersonnelTeam({
+      programId,
+      personnelId,
+    })
+    return programPersonnel
+  } catch (error) {
+    throw error
+  }
+}
+
+async function removePersonnelFromProgramTeam({ programId, personnelId }) {
+  try {
+    const deletedPersonnelCount = await knex('program_personnel_team')
+      .where('programId', programId)
+      .andWhere('personnelId', personnelId)
+      .del()
+    return deletedPersonnelCount
+  } catch (error) {
+    throw error
+  }
+}
+
 async function updatePersonnel({
   azureUid,
   personnelValues,
@@ -100,10 +129,28 @@ async function updatePersonnel({
   }
 }
 
+async function updatePersonnelById({
+  id,
+  personnelValues,
+}): Promise<Personnel> {
+  try {
+    const updatedPersonnel = await knex<Personnel>('personnel')
+      .where('id', id)
+      .update(personnelValues, ['*'])
+    return updatedPersonnel[0]
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
 export {
   getPersonnel,
   getAllPersonnel,
   getPersonnelByAzureUid,
   postPersonnel,
   updatePersonnel,
+  updatePersonnelById,
+  addPersonnelToProgramTeam,
+  removePersonnelFromProgramTeam,
 }
