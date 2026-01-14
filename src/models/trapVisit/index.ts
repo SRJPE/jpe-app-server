@@ -174,7 +174,6 @@ async function createTrapVisit(trapVisitValues): Promise<{
       })
     })
 
-    console.log('trapVisitEnvironmentalPayload:', trapVisitEnvironmentalPayload)
     const createdTrapVisitEnvironmentalResponse =
       trapVisitEnvironmentalPayload.length
         ? await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
