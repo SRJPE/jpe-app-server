@@ -173,8 +173,12 @@ async function createTrapVisit(trapVisitValues): Promise<{
         ...measureObject,
       })
     })
+
+    console.log('trapVisitEnvironmentalPayload:', trapVisitEnvironmentalPayload)
     const createdTrapVisitEnvironmentalResponse =
-      await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
+      trapVisitEnvironmentalPayload.length
+        ? await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
+        : null
 
     const visitCrewPromises = []
     trapVisitCrew.forEach(async crewMember => {
