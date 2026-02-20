@@ -215,9 +215,8 @@ async function createCatchRaw(catchRawValues): Promise<{
         }
       })
 
-      createdExistingMarksResponse = await postExistingMarks(
-        existingMarksPayload
-      )
+      createdExistingMarksResponse =
+        await postExistingMarks(existingMarksPayload)
     }
 
     if (geneticSamplingData?.length > 0) {
@@ -263,9 +262,8 @@ async function createCatchRaw(catchRawValues): Promise<{
             updatedAt: createdCatchRaw.updatedAt,
             ...appliedMarkSubmissionCopy,
           }
-          const createdSingleMarkAppliedResponse = await postMarkApplied(
-            markAppliedPayload
-          )
+          const createdSingleMarkAppliedResponse =
+            await postMarkApplied(markAppliedPayload)
 
           const markAppliedCrewPayload: any = {
             personnel: crewMember,
@@ -368,7 +366,10 @@ async function putCatchRaw(
 
     let updatedMarkApplied = []
 
-    if (catchRawObject.createdMarkAppliedResponse) {
+    if (
+      catchRawObject.createdMarkAppliedResponse &&
+      Array.isArray(catchRawObject.createdMarkAppliedResponse)
+    ) {
       updatedMarkApplied = await Promise.all(
         catchRawObject.createdMarkAppliedResponse.map(async markApplied => {
           let id = markApplied.id
@@ -385,7 +386,10 @@ async function putCatchRaw(
 
     let updatedExistingMarks = []
 
-    if (catchRawObject.createdExistingMarksResponse) {
+    if (
+      catchRawObject.createdExistingMarksResponse &&
+      Array.isArray(catchRawObject.createdExistingMarksResponse)
+    ) {
       updatedExistingMarks = await Promise.all(
         catchRawObject.createdExistingMarksResponse.map(async existingMark => {
           let id = existingMark?.id
@@ -406,7 +410,29 @@ async function putCatchRaw(
 
     let updatedGeneticSamplingData = []
 
-    if (catchRawObject.createdGeneticSamplingDataResponse) {
+    if (
+      catchRawObject.createdGeneticSamplingDataResponse &&
+      Array.isArray(catchRawObject.createdGeneticSamplingDataResponse)
+    ) {
+      updatedGeneticSamplingData = await Promise.all(
+        catchRawObject.createdGeneticSamplingDataResponse.map(
+          async geneticSample => {
+            let id = geneticSample?.id
+            delete geneticSample?.id
+            if (id) {
+              const updatedGeneticSample = await knex<GeneticSamplingDataI>(
+                'geneticSamplingData'
+              )
+                .where('id', id)
+                .update(geneticSample, ['*'])
+              return updatedGeneticSample[0]
+            } else return geneticSample
+          }
+        )
+      )
+    } else if (
+      Array.isArray(catchRawObject.createdGeneticSamplingDataResponse)
+    ) {
       updatedGeneticSamplingData = await Promise.all(
         catchRawObject.createdGeneticSamplingDataResponse.map(
           async geneticSample => {
