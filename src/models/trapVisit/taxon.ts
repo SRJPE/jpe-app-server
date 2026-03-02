@@ -17,15 +17,41 @@ async function getTaxon(): Promise<Array<DropdownOption>> {
 
 //get taxon abbreviations
 async function getProgramTaxonAbbreviations(userId): Promise<Array<any>> {
-  const userProgramsIds = await knex('programPersonnelTeam')
+  const userPrograms = await knex('programPersonnelTeam as ppt')
     .where('personnelId', userId)
-    .select('programId')
+    .join('program as p', 'p.id', 'ppt.programId')
+    .select('ppt.programId', 'p.programName')
 
-  const programIds = userProgramsIds.map(row => row.programId)
+  const programIds = userPrograms.map(row => row.programId)
 
   try {
     const results = await Promise.all(
-      programIds?.map(async (programId: number) => {
+      userPrograms?.map(async (program: any) => {
+        if (program.programName.toLowerCase().includes('butte')) {
+          console.log('Found program:', program)
+          const result = await knex('taxon as t')
+            .join(
+              knex('taxon_abbreviation as ta')
+                .join(
+                  'program_taxon_abbreviation as pta',
+                  'ta.id',
+                  'pta.taxon_abbreviation_id'
+                )
+                .where('pta.program_id', program.programId)
+                .select('ta.*')
+                .as('ta'),
+              't.code',
+              'ta.taxon_code'
+            )
+            .select(
+              'ta.abbreviation_code',
+              't.code',
+              't.commonname',
+              'ta.is_full_name'
+            )
+          return result
+        }
+
         const result = await knex('taxon as t')
           .leftJoin(
             knex('taxon_abbreviation as ta')
@@ -34,13 +60,18 @@ async function getProgramTaxonAbbreviations(userId): Promise<Array<any>> {
                 'ta.id',
                 'pta.taxon_abbreviation_id'
               )
-              .where('pta.program_id', programId)
+              .where('pta.program_id', program.programId)
               .select('ta.*')
               .as('ta'),
             't.code',
             'ta.taxon_code'
           )
-          .select('ta.abbreviation_code', 't.*')
+          .select(
+            'ta.abbreviation_code',
+            't.code',
+            't.commonname',
+            'ta.is_full_name'
+          )
         return result
       })
     )
