@@ -28,7 +28,6 @@ async function getProgramTaxonAbbreviations(userId): Promise<Array<any>> {
     const results = await Promise.all(
       userPrograms?.map(async (program: any) => {
         if (program.programName.toLowerCase().includes('butte')) {
-          console.log('Found program:', program)
           const result = await knex('taxon as t')
             .join(
               knex('taxon_abbreviation as ta')
