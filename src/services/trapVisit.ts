@@ -150,30 +150,41 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
         'tl.*',
         'eq.definition',
         knex.raw(`
-      COALESCE(
-        (
-          SELECT json_agg(taxon_sub_query ORDER BY taxon_sub_query.created_at DESC)
-          FROM (
-            SELECT *
-            FROM (
-              SELECT DISTINCT ON (cr.taxon_code)
-                cr.taxon_code,
-                t.commonname,
-                t.latinname,
-                cr.created_at
-              FROM catch_raw cr
-              JOIN trap_visit tv ON tv.id = cr.trap_visit_id
-              JOIN taxon t ON t.code = cr.taxon_code
-              WHERE tv.trap_location_id = tl.id
-              ORDER BY cr.taxon_code, cr.created_at DESC
-            ) distinct_taxa
-            ORDER BY distinct_taxa.created_at DESC
-            LIMIT 5
-          ) taxon_sub_query
-        ),
-        '[]'
-      ) as "recentSpecies"
-    `)
+          COALESCE(
+            (
+              SELECT json_agg(taxon_sub_query ORDER BY taxon_sub_query.created_at DESC)
+              FROM (
+                SELECT *
+                FROM (
+                  SELECT DISTINCT ON (cr.taxon_code)
+                    cr.taxon_code,
+                    t.commonname,
+                    ta.abbreviation_code,
+                    cr.created_at
+                  FROM catch_raw cr
+                  JOIN trap_visit tv ON tv.id = cr.trap_visit_id
+                  JOIN taxon t ON t.code = cr.taxon_code
+
+                  LEFT JOIN LATERAL (
+                    SELECT ta.abbreviation_code
+                    FROM program_taxon_abbreviation pta
+                    JOIN taxon_abbreviation ta
+                      ON ta.id = pta.taxon_abbreviation_id
+                    WHERE pta.program_id = tv.program_id
+                      AND ta.taxon_code = cr.taxon_code
+                    LIMIT 1
+                  ) ta ON TRUE
+
+                  WHERE tv.trap_location_id = tl.id
+                  ORDER BY cr.taxon_code, cr.created_at DESC
+                ) distinct_taxa
+                ORDER BY distinct_taxa.created_at DESC
+                LIMIT 5
+              ) taxon_sub_query
+            ),
+            '[]'
+          ) as "recentSpecies"
+        `)
       )
       .leftJoin('equipment as eq', 'eq.id', 'tl.equipment_id')
       .whereIn('tl.program_id', programIds)
