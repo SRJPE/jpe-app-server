@@ -41,91 +41,61 @@ import {
   getTakeOptions,
   getConditionOptions,
 } from '../models/catchRaw/geneticSamplingData'
+import { getDebrisLevelOptions } from '../models/trapVisit/debrisLevel'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async (userId: string) => {
-  const dropdowns = {}
-
-  const requestPromises = [
-    getTrapFunctionalities(),
-    getWhyTrapNotFunctioning(),
-    getTrapStatusAtEnd(),
-    getTaxon(),
-    getProgramTaxonAbbreviations(userId),
-    getFishProcessedOptions(),
-    getWhyFishNotProcessedOptions(),
-    getLifeStages(),
-    getMarkTypes(),
-    getMarkColors(),
-    getBodyParts(),
-    getRuns(),
-    getUnits(),
-    getReleasePurposeOptions(),
-    getVisitTypes(),
-    getPlusCountMethodology(),
-    getReleaseMarks(),
-    getFundingAgencyOptions(),
-    getListingUnitOptions(),
-    getFrequencyOptions(),
-    getFishConditions(),
-    getLengthAtDateRiver(),
-    getLengthAtDateDelta(),
-    getRunCodeMethods(),
-    getConditionCodeOptions(),
-    getVegetationCodeOptions(),
-    getTideCodeOptions(),
-    getFlowDirectionOptions(),
-    getWeatherCodeOptions(),
-    getSubstrateOptions(),
-    getGearStatusOptions(),
-    getYsiNumOptions(),
-    getTakeOptions(),
-    getConditionOptions(),
-  ]
-  const keys = [
-    'trapFunctionality',
-    'whyTrapNotFunctioning',
-    'trapStatusAtEnd',
-    'taxon',
-    'programTaxonAbbreviation',
-    'fishProcessed',
-    'whyFishNotProcessed',
-    'lifeStage',
-    'markType',
-    'markColor',
-    'bodyPart',
-    'run',
-    'unit',
-    'releasePurpose',
-    'visitType',
-    'plusCountMethodology',
-    'releaseMarks',
-    'fundingAgency',
-    'listingUnit',
-    'frequency',
-    'fishCondition',
-    'lengthAtDateRiver',
-    'lengthAtDateDelta',
-    'runCodeMethods',
-    'conditionCode',
-    'vegetationCode',
-    'tideCode',
-    'flowDirection',
-    'weatherCode',
-    'substrate',
-    'gearStatus',
-    'ysiNum',
-    'take',
-    'condition',
+  const requests = [
+    { key: 'trapFunctionality', fn: getTrapFunctionalities() },
+    { key: 'whyTrapNotFunctioning', fn: getWhyTrapNotFunctioning() },
+    { key: 'trapStatusAtEnd', fn: getTrapStatusAtEnd() },
+    { key: 'taxon', fn: getTaxon() },
+    {
+      key: 'programTaxonAbbreviation',
+      fn: getProgramTaxonAbbreviations(userId),
+    },
+    { key: 'fishProcessed', fn: getFishProcessedOptions() },
+    { key: 'whyFishNotProcessed', fn: getWhyFishNotProcessedOptions() },
+    { key: 'lifeStage', fn: getLifeStages() },
+    { key: 'markType', fn: getMarkTypes() },
+    { key: 'markColor', fn: getMarkColors() },
+    { key: 'bodyPart', fn: getBodyParts() },
+    { key: 'run', fn: getRuns() },
+    { key: 'unit', fn: getUnits() },
+    { key: 'releasePurpose', fn: getReleasePurposeOptions() },
+    { key: 'visitType', fn: getVisitTypes() },
+    { key: 'plusCountMethodology', fn: getPlusCountMethodology() },
+    { key: 'releaseMarks', fn: getReleaseMarks() },
+    { key: 'fundingAgency', fn: getFundingAgencyOptions() },
+    { key: 'listingUnit', fn: getListingUnitOptions() },
+    { key: 'frequency', fn: getFrequencyOptions() },
+    { key: 'fishCondition', fn: getFishConditions() },
+    { key: 'lengthAtDateRiver', fn: getLengthAtDateRiver() },
+    { key: 'lengthAtDateDelta', fn: getLengthAtDateDelta() },
+    { key: 'runCodeMethods', fn: getRunCodeMethods() },
+    { key: 'conditionCode', fn: getConditionCodeOptions() },
+    { key: 'vegetationCode', fn: getVegetationCodeOptions() },
+    { key: 'tideCode', fn: getTideCodeOptions() },
+    { key: 'flowDirection', fn: getFlowDirectionOptions() },
+    { key: 'weatherCode', fn: getWeatherCodeOptions() },
+    { key: 'substrate', fn: getSubstrateOptions() },
+    { key: 'gearStatus', fn: getGearStatusOptions() },
+    { key: 'ysiNum', fn: getYsiNumOptions() },
+    { key: 'take', fn: getTakeOptions() },
+    { key: 'condition', fn: getConditionOptions() },
+    { key: 'debrisLevel', fn: getDebrisLevelOptions() },
   ]
 
-  const requestsResult = await Promise.allSettled(requestPromises)
+  const results = await Promise.allSettled(requests.map(r => r.fn))
 
-  requestsResult.forEach((result, index) => {
-    dropdowns[keys[index]] = result.status == 'fulfilled' ? result.value : []
-  })
-
-  return dropdowns
+  return results.reduce(
+    (dropdowns, result, index) => {
+      dropdowns[requests[index].key] =
+        result.status === 'fulfilled' ? result.value : []
+      return dropdowns
+    },
+    {} as Record<string, Array<any>>
+  )
 }
 
 // NOTE: Production functionality should filter visit setup default values
@@ -150,41 +120,42 @@ const getVisitSetupDefaultValues = async (personnelId: string) => {
         'tl.*',
         'eq.definition',
         knex.raw(`
-          COALESCE(
-            (
-              SELECT json_agg(taxon_sub_query ORDER BY taxon_sub_query.created_at DESC)
-              FROM (
-                SELECT *
-                FROM (
-                  SELECT DISTINCT ON (cr.taxon_code)
-                    cr.taxon_code,
-                    t.commonname,
-                    ta.abbreviation_code,
-                    cr.created_at
-                  FROM catch_raw cr
-                  JOIN trap_visit tv ON tv.id = cr.trap_visit_id
-                  JOIN taxon t ON t.code = cr.taxon_code
+        COALESCE(
+        (
+          SELECT json_agg(taxon_sub_query ORDER BY taxon_sub_query.created_at DESC)
+          FROM (
+          SELECT *
+          FROM (
+            SELECT DISTINCT ON (cr.taxon_code)
+            cr.taxon_code,
+            t.commonname,
+            ta.abbreviation_code,
+            ta.is_full_name,
+            cr.created_at
+            FROM catch_raw cr
+            JOIN trap_visit tv ON tv.id = cr.trap_visit_id
+            JOIN taxon t ON t.code = cr.taxon_code
 
-                  LEFT JOIN LATERAL (
-                    SELECT ta.abbreviation_code
-                    FROM program_taxon_abbreviation pta
-                    JOIN taxon_abbreviation ta
-                      ON ta.id = pta.taxon_abbreviation_id
-                    WHERE pta.program_id = tv.program_id
-                      AND ta.taxon_code = cr.taxon_code
-                    LIMIT 1
-                  ) ta ON TRUE
+            LEFT JOIN LATERAL (
+            SELECT ta.abbreviation_code, ta.is_full_name
+            FROM program_taxon_abbreviation pta
+            JOIN taxon_abbreviation ta
+              ON ta.id = pta.taxon_abbreviation_id
+            WHERE pta.program_id = tv.program_id
+              AND ta.taxon_code = cr.taxon_code
+            LIMIT 1
+            ) ta ON TRUE
 
-                  WHERE tv.trap_location_id = tl.id
-                  ORDER BY cr.taxon_code, cr.created_at DESC
-                ) distinct_taxa
-                ORDER BY distinct_taxa.created_at DESC
-                LIMIT 5
-              ) taxon_sub_query
-            ),
-            '[]'
-          ) as "recentSpecies"
-        `)
+            WHERE tv.trap_location_id = tl.id
+            ORDER BY cr.taxon_code, cr.created_at DESC
+          ) distinct_taxa
+          ORDER BY distinct_taxa.created_at DESC
+          LIMIT 5
+          ) taxon_sub_query
+        ),
+        '[]'
+        ) as "recentSpecies"
+      `)
       )
       .leftJoin('equipment as eq', 'eq.id', 'tl.equipment_id')
       .whereIn('tl.program_id', programIds)
