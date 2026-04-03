@@ -42,6 +42,7 @@ import {
   getConditionOptions,
 } from '../models/catchRaw/geneticSamplingData'
 import { getDebrisLevelOptions } from '../models/trapVisit/debrisLevel'
+import { getEquipment } from '../models/program/equipment'
 const { knex } = db
 
 const getAllTrapVisitDropdowns = async (userId: string) => {
@@ -84,6 +85,7 @@ const getAllTrapVisitDropdowns = async (userId: string) => {
     { key: 'take', fn: getTakeOptions() },
     { key: 'condition', fn: getConditionOptions() },
     { key: 'debrisLevel', fn: getDebrisLevelOptions() },
+    { key: 'equipment', fn: getEquipment() },
   ]
 
   const results = await Promise.allSettled(requests.map(r => r.fn))
