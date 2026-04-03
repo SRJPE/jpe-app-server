@@ -99,4 +99,16 @@ async function createRelease(releaseValues): Promise<{
   }
 }
 
-export { getRelease, postRelease }
+async function getProgramReleases(programId: number | string): Promise<any> {
+  try {
+    const releases = await knex<Release>('release')
+      .select('*')
+      .where('programId', programId)
+
+    return releases
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getRelease, postRelease, getProgramReleases }
