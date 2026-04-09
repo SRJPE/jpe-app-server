@@ -84,7 +84,7 @@ export default (mainRouter: Router) => {
     try {
       const { catchRawId } = req.params
       const deletedCatchRawResponse = await deleteCatchRaw(catchRawId)
-      res.status(200).send(deletedCatchRawResponse)
+      res.status(200).json({ deleted: deletedCatchRawResponse })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
