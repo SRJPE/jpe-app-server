@@ -43,16 +43,22 @@ async function getTrapVisit(trapVisitId: number | string): Promise<any> {
   }
 }
 
-async function getProgramTrapVisits(programId: number | string) {
+async function getProgramTrapVisits(
+  programId: number | string,
+  allTime?: boolean
+) {
   try {
-    // get current date, set year to previous year
-    const pastYear = new Date()
-    pastYear.setFullYear(pastYear.getFullYear() - 1)
-
-    const trapVisits = await knex<TrapVisit>('trapVisit')
+    let query = knex<TrapVisit>('trapVisit')
       .select('*')
       .where('programId', programId)
-      .andWhere('created_at', '>=', pastYear)
+
+    if (!allTime) {
+      const pastYear = new Date()
+      pastYear.setFullYear(pastYear.getFullYear() - 1)
+      query = query.andWhere('created_at', '>=', pastYear)
+    }
+
+    const trapVisits = await query
 
     const trapVisitIds = trapVisits.map(trapVisit => trapVisit.id)
 

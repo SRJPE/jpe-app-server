@@ -45,10 +45,10 @@ async function getTrapVisitCatchRawRecords(
 
 async function getProgramCatchRawRecords(
   programId: number | string,
-  limit?: number
+  limit?: number,
+  allTime?: boolean
 ) {
   try {
-    // get current date, set year to previous year
     const pastYear = new Date()
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
@@ -59,9 +59,12 @@ async function getProgramCatchRawRecords(
         'trapVisit.trapVisitTimeStart'
       )
       .where('catchRaw.programId', programId)
-      .andWhere('catchRaw.created_at', '>=', pastYear)
       .orderBy('catchRaw.id', 'desc')
       .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
+
+    if (!allTime) {
+      query = query.andWhere('catchRaw.created_at', '>=', pastYear)
+    }
 
     if (limit) {
       query = query.limit(limit)
@@ -89,7 +92,7 @@ async function getProgramCatchRawRecords(
         )
         .join('catchRaw', 'markApplied.catchRawId', 'catchRaw.id')
         .whereIn('catchRawId', catchRawIds)
-        .andWhere('catchRaw.created_at', '>=', pastYear),
+        .modify(q => { if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear) }),
       knex<ExistingMarksI>('existingMarks')
         .select(
           'existingMarks.*',
@@ -98,7 +101,7 @@ async function getProgramCatchRawRecords(
         )
         .join('catchRaw', 'existingMarks.catchRawId', 'catchRaw.id')
         .whereIn('catchRawId', catchRawIds)
-        .andWhere('catchRaw.created_at', '>=', pastYear),
+        .modify(q => { if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear) }),
       knex<GeneticSamplingDataI>('geneticSamplingData')
         .select(
           'geneticSamplingData.*',
@@ -111,7 +114,7 @@ async function getProgramCatchRawRecords(
         .leftJoin('take', 'geneticSamplingData.take', 'take.id')
         .leftJoin('condition', 'geneticSamplingData.condition', 'condition.id')
         .whereIn('catchRawId', catchRawIds)
-        .andWhere('catchRaw.created_at', '>=', pastYear),
+        .modify(q => { if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear) }),
       knex<CatchFishConditionI>('catchFishCondition')
         .select(
           'catchFishCondition.*',
@@ -120,7 +123,7 @@ async function getProgramCatchRawRecords(
         )
         .whereIn('catchRawId', catchRawIds)
         .join('catchRaw', 'catchFishCondition.catchRawId', 'catchRaw.id')
-        .andWhere('catchRaw.created_at', '>=', pastYear),
+        .modify(q => { if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear) }),
     ])
 
     // all release ids that are found within the existing marks of a program
