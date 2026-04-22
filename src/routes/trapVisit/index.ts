@@ -65,7 +65,11 @@ export default (mainRouter: Router) => {
     async (req, res) => {
       try {
         const { programId } = req.params
-        const trapVisits = await getProgramTrapVisits(programId)
+        const { allTime } = req.query
+        const trapVisits = await getProgramTrapVisits(
+          programId,
+          allTime === 'true'
+        )
         res.status(200).send(trapVisits)
       } catch (error) {
         console.error(error)
