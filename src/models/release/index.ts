@@ -102,8 +102,9 @@ async function createRelease(releaseValues): Promise<{
 async function getProgramReleases(programId: number | string): Promise<any> {
   try {
     const releases = await knex<Release>('release')
-      .select('*')
+      .select('release.*', 'releaseSite.releaseSiteName')
       .where('programId', programId)
+      .join('releaseSite', 'release.releaseSiteId', 'releaseSite.id')
 
     return releases
   } catch (error) {
