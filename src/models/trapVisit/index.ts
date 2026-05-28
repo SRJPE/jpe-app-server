@@ -159,15 +159,6 @@ async function createTrapVisit(trapVisitValues): Promise<{
 
     const createdTrapVisit = createdTrapVisitResponse?.[0]
 
-    // insert trapCoordinates
-    const trapCoordinatesPayload = {
-      trapVisitId: createdTrapVisit.id,
-      trapLocationsId: trapVisitValues.trapLocationId,
-      ...trapCoordinates,
-    }
-    const createdTrapCoordinatesResponse = await postTrapCoordinates(
-      trapCoordinatesPayload
-    )
     // insert trapVisitEnvironmental
     const trapVisitEnvironmentalPayload = []
 
@@ -203,7 +194,7 @@ async function createTrapVisit(trapVisitValues): Promise<{
       return {
         createdTrapVisitResponse: createdTrapVisit,
         createdTrapVisitCrewResponse: crewIds,
-        createdTrapCoordinatesResponse,
+        // createdTrapCoordinatesResponse,
         createdTrapVisitEnvironmentalResponse,
       }
     })
