@@ -35,4 +35,27 @@ async function getConditionOptions(): Promise<Array<any>> {
   }
 }
 
-export { postGeneticSamplingData, getTakeOptions, getConditionOptions }
+async function putGeneticSamplingData(
+  geneticSamplingId: string,
+  geneticSamplingObject: Record<string, any>
+): Promise<any> {
+  try {
+    const samplingData = {
+      ...geneticSamplingObject.createdGeneticSamplingDataResponse,
+    }
+    delete samplingData.id
+    const updated = await knex<GeneticSamplingDataI>('geneticSamplingData')
+      .where('id', geneticSamplingId)
+      .update(samplingData, ['*'])
+    return { createdGeneticSamplingDataResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  postGeneticSamplingData,
+  putGeneticSamplingData,
+  getTakeOptions,
+  getConditionOptions,
+}

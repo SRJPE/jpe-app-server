@@ -35,6 +35,8 @@ export interface TrapVisit {
   updatedAt?: Date
   qcCompleted?: boolean
   qcCompletedAt?: Date
+  qcCompletedBy?: number
+  qcComments?: string
   comments?: string
   crew?: Array<any>
   environmental?: Record<string, any>
@@ -92,6 +94,9 @@ export interface ExistingMarksI {
   markCode: string
   createdAt: Date
   updatedAt: Date
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 export interface GeneticSamplingDataI {
   id: number
@@ -118,6 +123,9 @@ export interface MarkAppliedI {
   comments?: string
   createdAt: Date
   updatedAt: Date
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 export interface MarkAppliedCrewI {
   id: number
@@ -148,6 +156,9 @@ export interface Release {
   totalWildFishDead?: number
   totalHatcheryFishDead?: number
   crew?: Array<any>
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 
 export interface ReleaseMarks {
