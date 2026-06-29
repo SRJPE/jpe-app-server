@@ -15,6 +15,8 @@ import programPersonnelTeamRouter from './programPersonnelTeam'
 import programFieldsRouter from './programFields'
 import formFieldsRouter from './formFields'
 import existingMarksRouter from './existingMarks'
+import markAppliedRouter from './markApplied'
+import geneticSamplingRouter from './geneticSampling'
 
 const mainRouter = express.Router()
 
@@ -34,6 +36,8 @@ userRouter(mainRouter)
 programRouter(mainRouter)
 catchRawRouter(mainRouter)
 existingMarksRouter(mainRouter)
+markAppliedRouter(mainRouter)
+geneticSamplingRouter(mainRouter)
 releaseRouter(mainRouter)
 releaseSiteRouter(mainRouter)
 personnelRouter(mainRouter)

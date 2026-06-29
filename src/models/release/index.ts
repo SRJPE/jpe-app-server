@@ -112,4 +112,20 @@ async function getProgramReleases(programId: number | string): Promise<any> {
   }
 }
 
-export { getRelease, postRelease, getProgramReleases }
+async function putRelease(
+  releaseId: string,
+  releaseObject: Record<string, any>
+): Promise<any> {
+  try {
+    const releaseData = { ...releaseObject.createdReleaseResponse }
+    delete releaseData.id
+    const updated = await knex<Release>('release')
+      .where('id', releaseId)
+      .update(releaseData, ['*'])
+    return { createdReleaseResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getRelease, postRelease, getProgramReleases, putRelease }
