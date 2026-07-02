@@ -30,7 +30,13 @@ export default (mainRouter: Router) => {
         fishMeasureProtocolValues
       )
       res.status(200).send(createdFishMeasureProtocol)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error:
+            'A fish measure protocol with this species, life stage, and run already exists for this program.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -46,7 +52,13 @@ export default (mainRouter: Router) => {
         fishMeasureProtocolValues,
       })
       res.status(200).send(updatedFishMeasureProtocol)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error:
+            'A fish measure protocol with this species, life stage, and run already exists for this program.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
