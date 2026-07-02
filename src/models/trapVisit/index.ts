@@ -254,27 +254,38 @@ async function putTrapVisit(
         'createdTrapVisitEnvironmentalResponse'
       )
     ) {
-      const measureNames = Object.values(
+      const envItems: Array<any> =
         trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
-      ).map((measure: any) => measure.measureName)
-      // delete existing records for measures for trap visit
-      await knex<TrapVisit>('trapVisitEnvironmental')
-        .whereIn('measureName', measureNames)
-        .andWhere('trapVisitId', trapVisitId)
-        .del()
 
-      trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse.forEach(
-        measure => {
-          delete measure.id
-        }
+      await Promise.all(
+        envItems.map(async measure => {
+          const { id, measureName, measureValueNumeric, measureValueText } =
+            measure
+          if (id) {
+            await knex('trapVisitEnvironmental').where('id', id).update({
+              measureValueNumeric,
+              measureValueText,
+            })
+          } else {
+            const existing = await knex('trapVisitEnvironmental')
+              .where({ trapVisitId, measureName })
+              .first()
+            if (existing) {
+              await knex('trapVisitEnvironmental')
+                .where('id', existing.id)
+                .update({ measureValueNumeric, measureValueText })
+            } else {
+              await knex('trapVisitEnvironmental').insert({
+                trapVisitId,
+                measureName,
+                measureValueNumeric,
+                measureValueText,
+              })
+            }
+          }
+        })
       )
 
-      const rowsToInsert =
-        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
-
-      await knex<TrapVisit>('trapVisitEnvironmental').insert(rowsToInsert, [
-        '*',
-      ])
       delete trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
     }
 

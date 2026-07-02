@@ -34,4 +34,20 @@ async function getProgramExistingMarks(
   }
 }
 
-export { postExistingMarks, getProgramExistingMarks }
+async function putExistingMark(
+  existingMarkId: string,
+  existingMarkObject: Record<string, any>
+): Promise<any> {
+  try {
+    const markData = { ...existingMarkObject.createdExistingMarkResponse }
+    delete markData.id
+    const updated = await knex<ExistingMarksI>('existingMarks')
+      .where('id', existingMarkId)
+      .update(markData, ['*'])
+    return { createdExistingMarkResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+export { postExistingMarks, getProgramExistingMarks, putExistingMark }
