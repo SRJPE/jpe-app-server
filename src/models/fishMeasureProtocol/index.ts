@@ -58,8 +58,20 @@ async function updateFishMeasureProtocol({
   }
 }
 
+async function deleteFishMeasureProtocol(id): Promise<number> {
+  try {
+    const deletedCount = await knex<FishMeasureProtocol>('fishMeasureProtocol')
+      .where('id', id)
+      .del()
+    return deletedCount
+  } catch (error) {
+    throw error
+  }
+}
+
 export {
   getFishMeasureProtocol,
   postFishMeasureProtocol,
   updateFishMeasureProtocol,
+  deleteFishMeasureProtocol,
 }

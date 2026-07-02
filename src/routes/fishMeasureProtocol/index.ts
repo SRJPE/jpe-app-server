@@ -3,6 +3,7 @@ import {
   getFishMeasureProtocol,
   postFishMeasureProtocol,
   updateFishMeasureProtocol,
+  deleteFishMeasureProtocol,
 } from '../../models/fishMeasureProtocol'
 
 const fishMeasureProtocolRouter = Router({ mergeParams: true })
@@ -59,6 +60,23 @@ export default (mainRouter: Router) => {
             'A fish measure protocol with this species, life stage, and run already exists for this program.',
         })
       }
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // DELETE
+  fishMeasureProtocolRouter.delete('/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const deletedCount = await deleteFishMeasureProtocol(id)
+      if (deletedCount > 0) {
+        return res.status(200).send({ success: true, deletedCount })
+      }
+      return res
+        .status(404)
+        .send({ error: 'Fish measure protocol not found.' })
+    } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }
