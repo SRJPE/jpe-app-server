@@ -107,7 +107,10 @@ async function getProgramReleases(programId: number | string): Promise<any> {
         'releaseSite.releaseSiteName',
         'markType.definition as markTypeName',
         'markColor.definition as markColorName',
-        'bodyPart.definition as markPositionName'
+        'bodyPart.definition as markPositionName',
+        'releaseMarks.fishCount',
+        'releaseMarks.releaseSiteId as markReleaseSiteId',
+        'markReleaseSite.releaseSiteName as markReleaseSiteName'
       )
       .where('programId', programId)
       .join('releaseSite', 'release.releaseSiteId', 'releaseSite.id')
@@ -115,6 +118,11 @@ async function getProgramReleases(programId: number | string): Promise<any> {
       .leftJoin('markType', 'markType.id', 'releaseMarks.markType')
       .leftJoin('markColor', 'markColor.id', 'releaseMarks.markColor')
       .leftJoin('bodyPart', 'bodyPart.id', 'releaseMarks.markPosition')
+      .leftJoin(
+        'releaseSite as markReleaseSite',
+        'markReleaseSite.id',
+        'releaseMarks.releaseSiteId'
+      )
     return releases
   } catch (error) {
     throw error
