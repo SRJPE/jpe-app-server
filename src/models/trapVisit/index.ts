@@ -87,15 +87,30 @@ async function getProgramTrapVisits(
       return acc
     }, {})
 
+    const environmentalByTrapVisitId = trapVisitEnvironmentalData.reduce(
+      (acc, row) => {
+        if (!acc[row.trapVisitId]) {
+          acc[row.trapVisitId] = []
+        }
+        acc[row.trapVisitId].push(row)
+        return acc
+      },
+      {}
+    )
+
+    const coordinatesByTrapVisitId = coordinatesData.reduce((acc, row) => {
+      if (!acc[row.trapVisitId]) {
+        acc[row.trapVisitId] = row
+      }
+      return acc
+    }, {})
+
     const payload = trapVisits.map(trapVisit => {
-      const trapVisitEnvironmental = trapVisitEnvironmentalData.filter(
-        row => row.trapVisitId === trapVisit.id
-      )
+      const trapVisitEnvironmental = environmentalByTrapVisitId[trapVisit.id] || []
 
       const personnelIds = personnelIdsByTrapVisitId[trapVisit.id] || null
 
-      const coordinates =
-        coordinatesData.find(row => row.trapVisitId === trapVisit.id) || null
+      const coordinates = coordinatesByTrapVisitId[trapVisit.id] || null
 
       return {
         createdTrapVisitResponse: trapVisit,

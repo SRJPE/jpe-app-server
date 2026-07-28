@@ -167,6 +167,10 @@ export interface ReleaseMarks {
   markType: number
   markColor: number
   markPosition: number
+  // Optional per-mark overrides for multi-location release trials.
+  // Null on traditional single-location releases.
+  fishCount?: number
+  releaseSiteId?: number
 }
 export interface ReleaseCrew {
   id: number
