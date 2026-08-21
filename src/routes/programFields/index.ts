@@ -27,7 +27,13 @@ export default (mainRouter: Router) => {
       const values = req.body
       const createdProgramField = await postProgramFormField(values)
       res.status(200).send(createdProgramField)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error:
+            'This form field is already enabled for this program and equipment.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -42,7 +48,13 @@ export default (mainRouter: Router) => {
         updatedValues,
       })
       res.status(200).send(updatedProgramField)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error:
+            'This form field is already enabled for this program and equipment.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
