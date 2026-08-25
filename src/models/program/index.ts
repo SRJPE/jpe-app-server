@@ -19,6 +19,7 @@ import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 import { getProgramFormFields } from './formFields'
+import { getOptionsByFormFieldIds } from './formFieldOptions'
 
 const { knex } = db
 
@@ -70,7 +71,10 @@ async function getPersonnelPrograms(
             .select('*')
             .orderBy('id'),
           getFishMeasureProtocol(program.id),
-          getProgramFormFields(program.id),
+          // Options are hoisted into one query below — this path runs on every
+          // authorized request via isAuthorized(), so a per-program option
+          // fetch here would multiply the hot path.
+          getProgramFormFields(program.id, { withOptions: false }),
         ])
 
         program['trappingSites'] = trapLocationsData
@@ -80,6 +84,23 @@ async function getPersonnelPrograms(
         program['programFormFields'] = formFieldsData
       })
     )
+
+    // One whereIn across every program's fields, then fan the results back out.
+    const optionsByFormFieldId = await getOptionsByFormFieldIds(
+      programs.flatMap((program: any) =>
+        (program.programFormFields ?? []).map((field: any) => field.formFieldId)
+      )
+    )
+
+    programs.forEach((program: any) => {
+      program.programFormFields = (program.programFormFields ?? []).map(
+        (field: any) => ({
+          ...field,
+          options: optionsByFormFieldId[field.formFieldId] ?? [],
+        })
+      )
+    })
+
     return programs
   } catch (error) {
     console.log('errr', error)
