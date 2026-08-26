@@ -37,7 +37,9 @@ async function getAllFormFields(): Promise<Array<DropdownOption>> {
  * be created at runtime.
  */
 async function postFormField(values): Promise<any> {
-  const { options, ...rest } = values ?? {}
+  const { options, programId: rawProgramId, program_id, ...rest } =
+    values ?? {}
+  const programId = rawProgramId ?? program_id ?? null
 
   // The dashboard posts snake_case; knexSnakeCaseMappers leaves already-snake
   // keys alone, so accept either spelling here.
@@ -67,10 +69,16 @@ async function postFormField(values): Promise<any> {
         throw error
       }
 
+      // Scoped to the creating program by default, NOT global — otherwise
+      // any other program that later attaches to this same catalog entry via
+      // the "Existing Field" picker would be stuck sharing these exact
+      // options, with no way to have their own. See
+      // form_field_option_program_scope migration.
       const inserted = await insertFormFieldOptions(
         created.id,
         definitions,
-        trx
+        trx,
+        programId
       )
 
       return { ...created, options: inserted }
@@ -104,8 +112,13 @@ async function getProgramFormFields(
     // `formField.*` and `programFields.*`; Postgres returns the last duplicate
     // column, so `row.id` is the program_fields id. Keying options off `row.id`
     // silently hands every field the wrong option set.
+    //
+    // programId here scopes the merge to THIS program's own options + the
+    // shared/global set — never another program's, even if two programs
+    // both attached to the same global form_field catalog entry.
     const optionsByFormFieldId = await getOptionsByFormFieldIds(
-      programFormFields.map((row: any) => row.formFieldId)
+      programFormFields.map((row: any) => row.formFieldId),
+      programId
     )
 
     return programFormFields.map((row: any) => ({
