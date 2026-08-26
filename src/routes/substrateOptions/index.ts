@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import {
   getSubstrateOptions,
+  getHiddenDefaults,
+  hideDefaultOption,
   createSubstrateOption,
   updateSubstrateOption,
   getExcludeGlobalOptions,
@@ -16,16 +18,42 @@ export default (mainRouter: Router) => {
   substrateOptionsRouter.get('/:programId', isAuthorized(), async (req, res) => {
     try {
       const { programId } = req.params
-      const [options, excludeGlobalOptions] = await Promise.all([
+      const [options, excludeGlobalOptions, hiddenDefaults] = await Promise.all([
         getSubstrateOptions(programId),
         getExcludeGlobalOptions(programId),
+        getHiddenDefaults(programId),
       ])
-      res.status(200).send({ options, excludeGlobalOptions })
+      res.status(200).send({ options, excludeGlobalOptions, hiddenDefaults })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }
   })
+
+  // Suppresses one specific default (globalOptionId) for this program —
+  // distinct from PUT .../settings, which hides EVERY default at once.
+  // Unhide reuses PATCH /:programId/:id with { active: true } below, since
+  // the shadow row this creates is program-owned like any other row.
+  substrateOptionsRouter.post(
+    '/:programId/hide-default',
+    isAuthorized(),
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const { globalOptionId } = req.body ?? {}
+        if (!globalOptionId) {
+          return res.status(400).send({ error: 'globalOptionId is required.' })
+        }
+        const hidden = await hideDefaultOption({ programId, globalOptionId })
+        res.status(200).send(hidden)
+      } catch (error: any) {
+        console.error(error)
+        res
+          .status(error?.status ?? 400)
+          .send(error?.status ? { error: error.message } : error)
+      }
+    }
+  )
 
   substrateOptionsRouter.post('/:programId', isAuthorized(), async (req, res) => {
     try {
