@@ -14,6 +14,7 @@ import permitInfoRouter from './permitInfo'
 import programPersonnelTeamRouter from './programPersonnelTeam'
 import programFieldsRouter from './programFields'
 import formFieldsRouter from './formFields'
+import programTaxonAbbreviationsRouter from './programTaxonAbbreviations'
 import existingMarksRouter from './existingMarks'
 import markAppliedRouter from './markApplied'
 import geneticSamplingRouter from './geneticSampling'
@@ -49,5 +50,6 @@ releaseSiteRouter(mainRouter)
 programPersonnelTeamRouter(mainRouter)
 programFieldsRouter(mainRouter)
 formFieldsRouter(mainRouter)
+programTaxonAbbreviationsRouter(mainRouter)
 
 export default mainRouter
