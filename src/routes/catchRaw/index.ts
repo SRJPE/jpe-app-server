@@ -15,9 +15,9 @@ export default (mainRouter: Router) => {
   mainRouter.use('/catch-raw', catchRawRouter)
 
   catchRawRouter.get('/:catchRawId', async (req, res) => {
-    const { catchRawId } = req.params
-    const catchRawRecord = await getCatchRawRecord(catchRawId)
     try {
+      const { catchRawId } = req.params
+      const catchRawRecord = await getCatchRawRecord(catchRawId)
       res.status(200).send(catchRawRecord)
     } catch (error) {
       console.error(error)
