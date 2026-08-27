@@ -30,7 +30,12 @@ export default (mainRouter: Router) => {
       const trapVisitValues = req.body
       const createdTrapVisit = await postTrapVisit(trapVisitValues)
       res.status(200).send(createdTrapVisit)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this trap visit.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -84,7 +89,12 @@ export default (mainRouter: Router) => {
       const trapVisitValues = req.body
       const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
       res.status(200).send(editedTrapVisit)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this trap visit.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }

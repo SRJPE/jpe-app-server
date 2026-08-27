@@ -52,7 +52,12 @@ export default (mainRouter: Router) => {
       const releaseValues = req.body
       const createdRelease = await postRelease(releaseValues)
       res.status(200).send(createdRelease)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this release.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }

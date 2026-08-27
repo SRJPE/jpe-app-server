@@ -15,9 +15,9 @@ export default (mainRouter: Router) => {
   mainRouter.use('/catch-raw', catchRawRouter)
 
   catchRawRouter.get('/:catchRawId', async (req, res) => {
-    const { catchRawId } = req.params
-    const catchRawRecord = await getCatchRawRecord(catchRawId)
     try {
+      const { catchRawId } = req.params
+      const catchRawRecord = await getCatchRawRecord(catchRawId)
       res.status(200).send(catchRawRecord)
     } catch (error) {
       console.error(error)
@@ -63,7 +63,22 @@ export default (mainRouter: Router) => {
       const catchRawValues = req.body
       const createdCatchRawRecord = await postCatchRaw(catchRawValues)
       res.status(200).send(createdCatchRawRecord)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        const messagesByConstraint = {
+          genetic_sampling_crew_unique:
+            'This crew member is already assigned to this genetic sample.',
+          mark_applied_crew_unique:
+            'This crew member is already assigned to this applied mark.',
+          catch_fish_condition_unique:
+            'This fish condition is already recorded for this catch.',
+        }
+        return res.status(409).send({
+          error:
+            messagesByConstraint[error.constraint] ||
+            'This record already exists.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }

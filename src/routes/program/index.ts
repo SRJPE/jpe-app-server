@@ -31,7 +31,12 @@ export default (mainRouter: Router) => {
       const programValues = req.body
       const createdProgram = await postProgram(programValues)
       res.status(200).send(createdProgram)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This personnel is already on this program\'s team.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
