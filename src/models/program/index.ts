@@ -19,7 +19,7 @@ import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 import { getProgramFormFields } from './formFields'
-import { getOptionsByFormFieldIds } from './formFieldOptions'
+import { getOptionsByFormFieldIdsForPrograms } from './formFieldOptions'
 
 const { knex } = db
 
@@ -85,14 +85,18 @@ async function getPersonnelPrograms(
       })
     )
 
-    // One whereIn across every program's fields, then fan the results back out.
-    const optionsByFormFieldId = await getOptionsByFormFieldIds(
+    // One whereIn across every program's fields, then fan the results back
+    // out PER PROGRAM — each program only ever sees its own scoped options
+    // plus the shared/global set, never another program's.
+    const optionsByProgramId = await getOptionsByFormFieldIdsForPrograms(
       programs.flatMap((program: any) =>
         (program.programFormFields ?? []).map((field: any) => field.formFieldId)
-      )
+      ),
+      programs.map((program: any) => program.id)
     )
 
     programs.forEach((program: any) => {
+      const optionsByFormFieldId = optionsByProgramId[String(program.id)] ?? {}
       program.programFormFields = (program.programFormFields ?? []).map(
         (field: any) => ({
           ...field,

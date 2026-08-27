@@ -58,11 +58,24 @@ async function getWeatherCodeOptions(): Promise<Array<CodeDropdownOption>> {
   }
 }
 
+// substrate is now program-scoped (see models/program/substrateOptions.ts,
+// used by the dashboard's Manage Options UI) — programId/active columns
+// were added there. This function is the one the mobile app's general
+// dropdowns endpoint actually reads (getAllTrapVisitDropdowns), and it has
+// no program context to scope by, so it's deliberately narrowed to just the
+// shared defaults (programId IS NULL, active) rather than every row —
+// otherwise a program's private additions or hidden defaults would leak to
+// (or fail to disappear from) every OTHER program's mobile dropdown. A
+// program's own customizations don't reach mobile yet; that needs this
+// entry to become program-scoped the same way programTaxonAbbreviation
+// already is, which also requires a corresponding rst-pilot-app-client
+// change to consume a per-program shape instead of one flat list.
 async function getSubstrateOptions(): Promise<Array<CodeDropdownOption>> {
   try {
-    const substrateRecords = await knex<CodeDropdownOption>('substrate').select(
-      '*'
-    )
+    const substrateRecords = await knex<CodeDropdownOption>('substrate')
+      .whereNull('programId')
+      .andWhere('active', true)
+      .select('*')
     return substrateRecords
   } catch (error) {
     throw error
