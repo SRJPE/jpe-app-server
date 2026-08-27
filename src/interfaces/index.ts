@@ -228,6 +228,15 @@ export interface TrapVisitEnvironmental {
   measureUnit: number
 }
 
+export interface CatchRawConditionalValues {
+  id: number
+  catchRawId: number
+  measureName: string
+  measureValueNumeric: number
+  measureValueText: string
+  measureUnit: number
+}
+
 export interface HatcheryInfo {
   id: number
   hatcheryName?: string

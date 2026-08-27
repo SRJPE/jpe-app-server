@@ -57,7 +57,12 @@ export default (mainRouter: Router) => {
       const personnelValues = req.body
       const createdPersonnel = await postPersonnel(personnelValues)
       res.status(200).send(createdPersonnel)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This personnel is already on this program\'s team.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -72,7 +77,12 @@ export default (mainRouter: Router) => {
         personnelId: personnelValues.personnelId,
       })
       res.status(200).send(createdPersonnel)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This personnel is already on this program\'s team.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
