@@ -160,9 +160,7 @@ async function deleteRelease(releaseId: number | string): Promise<number> {
         .where('releaseId', releaseId)
         .update({ releaseId: null })
 
-      const deleted = await trx<Release>('release')
-        .where('id', releaseId)
-        .del()
+      const deleted = await trx<Release>('release').where('id', releaseId).del()
 
       if (!deleted) {
         throw new Error(`Release ${releaseId} not found`)
