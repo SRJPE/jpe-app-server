@@ -1,5 +1,18 @@
 import db from '../../db'
-import { TrapVisit, TrapVisitCrew } from '../../interfaces'
+import {
+  TrapVisit,
+  TrapVisitCrew,
+  TrapVisitEnvironmental,
+  TrapCoordinates,
+  CatchRaw,
+  ExistingMarksI,
+  GeneticSamplingDataI,
+  GeneticSamplingCrewI,
+  MarkAppliedI,
+  MarkAppliedCrewI,
+  CatchFishConditionI,
+  CatchRawConditionalValues,
+} from '../../interfaces'
 import { camelCase, keyBy } from 'lodash'
 import { postTrapCoordinates } from './trapCoordinates'
 import { postTrapVisitEnvironmental } from './trapVisitEnvironmental'
@@ -317,4 +330,113 @@ async function putTrapVisit(
   }
 }
 
-export { getTrapVisit, getProgramTrapVisits, postTrapVisit, putTrapVisit }
+// DELETE trapVisit - cascades to every record owned by this visit:
+// crew, environmental measures, coordinates, catch records, and everything
+// hanging off those catch records (recaptures, marks applied, genetics,
+// fish condition). Releases are NOT touched — they aren't owned by a trap
+// visit (no trapVisitId column on `release`).
+//
+// Most of these FKs already CASCADE at the DB level (see catch_raw ->
+// trap_visit, and existing_marks/genetic_sampling_data/mark_applied/
+// catch_fish_condition -> catch_raw), but a few child tables use NO ACTION
+// and would otherwise raise a FK violation, so we delete/unlink those
+// explicitly before removing their parents. Everything runs in one
+// transaction so a partial failure can't leave orphaned rows.
+async function deleteTrapVisit(trapVisitId: number | string): Promise<{
+  trapVisitId: number | string
+  deletedCatchRawCount: number
+}> {
+  try {
+    return await knex.transaction(async trx => {
+      const catchRawRows = await trx<CatchRaw>('catchRaw')
+        .select('id')
+        .where('trapVisitId', trapVisitId)
+      const catchRawIds = catchRawRows.map((r: any) => r.id)
+
+      if (catchRawIds.length) {
+        const markAppliedRows = await trx<MarkAppliedI>('markApplied')
+          .select('id')
+          .whereIn('catchRawId', catchRawIds)
+        const markAppliedIds = markAppliedRows.map(r => r.id)
+
+        const geneticSamplingRows = await trx<GeneticSamplingDataI>(
+          'geneticSamplingData'
+        )
+          .select('id')
+          .whereIn('catchRawId', catchRawIds)
+        const geneticSamplingDataIds = geneticSamplingRows.map(r => r.id)
+
+        if (geneticSamplingDataIds.length) {
+          await trx<GeneticSamplingCrewI>('geneticSamplingCrew')
+            .whereIn('geneticSamplingDataId', geneticSamplingDataIds)
+            .del()
+        }
+        await trx<GeneticSamplingDataI>('geneticSamplingData')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        if (markAppliedIds.length) {
+          // A recapture elsewhere in the system may reference the mark
+          // applied here (fish marked on this visit, recaptured on another).
+          // Unlink rather than delete so we don't destroy that other visit's
+          // recapture record.
+          await trx<ExistingMarksI>('existingMarks')
+            .whereIn('markAppliedId', markAppliedIds)
+            .update({ markAppliedId: null })
+
+          await trx<MarkAppliedCrewI>('markAppliedCrew')
+            .whereIn('markAppliedId', markAppliedIds)
+            .del()
+        }
+        await trx<MarkAppliedI>('markApplied')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        // This visit's own recapture records (a fish caught here that carried
+        // a mark from a prior release).
+        await trx<ExistingMarksI>('existingMarks')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        await trx<CatchFishConditionI>('catchFishCondition')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        await trx<CatchRawConditionalValues>('catchRawConditionalValues')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+      }
+
+      await trx<CatchRaw>('catchRaw').where('trapVisitId', trapVisitId).del()
+      await trx<TrapVisitCrew>('trapVisitCrew')
+        .where('trapVisitId', trapVisitId)
+        .del()
+      await trx<TrapVisitEnvironmental>('trapVisitEnvironmental')
+        .where('trapVisitId', trapVisitId)
+        .del()
+      await trx<TrapCoordinates>('trapCoordinates')
+        .where('trapVisitId', trapVisitId)
+        .del()
+
+      const deleted = await trx<TrapVisit>('trapVisit')
+        .where('id', trapVisitId)
+        .del()
+
+      if (!deleted) {
+        throw new Error(`Trap visit ${trapVisitId} not found`)
+      }
+
+      return { trapVisitId, deletedCatchRawCount: catchRawIds.length }
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  getTrapVisit,
+  getProgramTrapVisits,
+  postTrapVisit,
+  putTrapVisit,
+  deleteTrapVisit,
+}
