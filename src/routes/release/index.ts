@@ -4,6 +4,7 @@ import {
   getRelease,
   getProgramReleases,
   putRelease,
+  deleteRelease,
 } from '../../models/release'
 
 const releaseRouter = Router({ mergeParams: true })
@@ -40,6 +41,18 @@ export default (mainRouter: Router) => {
       const { releaseId } = req.params
       const updatedRelease = await putRelease(releaseId, req.body)
       res.status(200).send(updatedRelease)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // DELETE /release/:releaseId
+  releaseRouter.delete('/:releaseId', async (req, res) => {
+    try {
+      const { releaseId } = req.params
+      const deleted = await deleteRelease(releaseId)
+      res.status(200).json({ deleted })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)

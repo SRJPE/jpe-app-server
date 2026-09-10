@@ -1,5 +1,5 @@
 import db from '../../db'
-import { GeneticSamplingDataI } from '../../interfaces'
+import { GeneticSamplingDataI, GeneticSamplingCrewI } from '../../interfaces'
 
 const { knex } = db
 
@@ -53,9 +53,36 @@ async function putGeneticSamplingData(
   }
 }
 
+// DELETE geneticSamplingData - cascades geneticSamplingCrew (NO ACTION FK,
+// no CASCADE at the DB level).
+async function deleteGeneticSamplingData(
+  geneticSamplingId: string
+): Promise<number> {
+  try {
+    return await knex.transaction(async trx => {
+      await trx<GeneticSamplingCrewI>('geneticSamplingCrew')
+        .where('geneticSamplingDataId', geneticSamplingId)
+        .del()
+
+      const deleted = await trx<GeneticSamplingDataI>('geneticSamplingData')
+        .where('id', geneticSamplingId)
+        .del()
+
+      if (!deleted) {
+        throw new Error(`Genetic sample ${geneticSamplingId} not found`)
+      }
+
+      return deleted
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
 export {
   postGeneticSamplingData,
   putGeneticSamplingData,
   getTakeOptions,
   getConditionOptions,
+  deleteGeneticSamplingData,
 }

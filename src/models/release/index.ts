@@ -145,4 +145,38 @@ async function putRelease(
   }
 }
 
-export { getRelease, postRelease, getProgramReleases, putRelease }
+// DELETE release - cascades releaseCrew and releaseMarks (both NO ACTION
+// FKs, no CASCADE at the DB level). A recapture (existingMarks) may record
+// which release the fish's original mark came from — unlink rather than
+// delete so the recapture record survives.
+async function deleteRelease(releaseId: number | string): Promise<number> {
+  try {
+    return await knex.transaction(async trx => {
+      await trx<ReleaseCrew>('releaseCrew').where('releaseId', releaseId).del()
+      await trx<ReleaseMarks>('releaseMarks')
+        .where('releaseId', releaseId)
+        .del()
+      await trx('existingMarks')
+        .where('releaseId', releaseId)
+        .update({ releaseId: null })
+
+      const deleted = await trx<Release>('release').where('id', releaseId).del()
+
+      if (!deleted) {
+        throw new Error(`Release ${releaseId} not found`)
+      }
+
+      return deleted
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  getRelease,
+  postRelease,
+  getProgramReleases,
+  putRelease,
+  deleteRelease,
+}
