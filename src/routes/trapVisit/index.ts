@@ -23,6 +23,16 @@ import { isAuthorized } from '../../middleware/auth-middleware'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
+// Friendly messages for trap_visit's CHECK constraints (Postgres error code
+// 23514), keyed by the violated constraint's name — otherwise these surface
+// to the client as a raw, unreadable Postgres error object.
+const CHECK_CONSTRAINT_MESSAGES: Record<string, string> = {
+  why_trap_not_functioning_check:
+    'Why Trap Not Functioning is required when Trap Functioning is "functioning but not normally" or "not functioning".',
+  why_fish_not_processed_check:
+    'Why Fish Not Processed is required when Fish Processed indicates no data was recorded.',
+}
+
 export default (mainRouter: Router) => {
   mainRouter.use('/trap-visit', trapVisitRouter)
 
@@ -35,6 +45,13 @@ export default (mainRouter: Router) => {
       if (error.code === '23505') {
         return res.status(409).send({
           error: 'This crew member is already assigned to this trap visit.',
+        })
+      }
+      if (error.code === '23514') {
+        return res.status(400).send({
+          error:
+            CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
+            'This trap visit violates a data rule.',
         })
       }
       console.error(error)
@@ -96,6 +113,13 @@ export default (mainRouter: Router) => {
           error: 'This crew member is already assigned to this trap visit.',
         })
       }
+      if (error.code === '23514') {
+        return res.status(400).send({
+          error:
+            CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
+            'This trap visit violates a data rule.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -118,9 +142,8 @@ export default (mainRouter: Router) => {
     async (req, res) => {
       try {
         const { personnelId } = req.params
-        const trapSetupDefaultValues = await getVisitSetupDefaultValues(
-          personnelId
-        )
+        const trapSetupDefaultValues =
+          await getVisitSetupDefaultValues(personnelId)
         res.status(200).send(trapSetupDefaultValues)
       } catch (error) {
         console.error(error)
