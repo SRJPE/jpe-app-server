@@ -4,6 +4,7 @@ import {
   getRelease,
   getProgramReleases,
   putRelease,
+  deleteRelease,
 } from '../../models/release'
 
 const releaseRouter = Router({ mergeParams: true })
@@ -46,13 +47,30 @@ export default (mainRouter: Router) => {
     }
   })
 
+  // DELETE /release/:releaseId
+  releaseRouter.delete('/:releaseId', async (req, res) => {
+    try {
+      const { releaseId } = req.params
+      const deleted = await deleteRelease(releaseId)
+      res.status(200).json({ deleted })
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
   // POST /release
   releaseRouter.post('/', async (req, res) => {
     try {
       const releaseValues = req.body
       const createdRelease = await postRelease(releaseValues)
       res.status(200).send(createdRelease)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this release.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }

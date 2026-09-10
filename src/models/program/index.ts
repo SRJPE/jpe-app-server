@@ -19,6 +19,7 @@ import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { postProgramPersonnelTeam } from '../programPersonnelTeam'
 import { getProgramFormFields } from './formFields'
+import { getOptionsByFormFieldIdsForPrograms } from './formFieldOptions'
 
 const { knex } = db
 
@@ -70,7 +71,10 @@ async function getPersonnelPrograms(
             .select('*')
             .orderBy('id'),
           getFishMeasureProtocol(program.id),
-          getProgramFormFields(program.id),
+          // Options are hoisted into one query below — this path runs on every
+          // authorized request via isAuthorized(), so a per-program option
+          // fetch here would multiply the hot path.
+          getProgramFormFields(program.id, { withOptions: false }),
         ])
 
         program['trappingSites'] = trapLocationsData
@@ -80,6 +84,27 @@ async function getPersonnelPrograms(
         program['programFormFields'] = formFieldsData
       })
     )
+
+    // One whereIn across every program's fields, then fan the results back
+    // out PER PROGRAM — each program only ever sees its own scoped options
+    // plus the shared/global set, never another program's.
+    const optionsByProgramId = await getOptionsByFormFieldIdsForPrograms(
+      programs.flatMap((program: any) =>
+        (program.programFormFields ?? []).map((field: any) => field.formFieldId)
+      ),
+      programs.map((program: any) => program.id)
+    )
+
+    programs.forEach((program: any) => {
+      const optionsByFormFieldId = optionsByProgramId[String(program.id)] ?? {}
+      program.programFormFields = (program.programFormFields ?? []).map(
+        (field: any) => ({
+          ...field,
+          options: optionsByFormFieldId[field.formFieldId] ?? [],
+        })
+      )
+    })
+
     return programs
   } catch (error) {
     console.log('errr', error)

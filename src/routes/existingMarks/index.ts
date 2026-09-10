@@ -3,6 +3,7 @@ import {
   getProgramExistingMarks,
   postExistingMarks,
   putExistingMark,
+  deleteExistingMark,
 } from '../../models/catchRaw/existingMarks'
 
 const existingMarksRouter = Router({ mergeParams: true })
@@ -28,6 +29,17 @@ export default (mainRouter: Router) => {
       const { existingMarkId } = req.params
       const updated = await putExistingMark(existingMarkId, req.body)
       res.status(200).send(updated)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  existingMarksRouter.delete('/:existingMarkId', async (req, res) => {
+    try {
+      const { existingMarkId } = req.params
+      const deleted = await deleteExistingMark(existingMarkId)
+      res.status(200).json({ deleted })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
