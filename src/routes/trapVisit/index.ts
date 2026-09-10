@@ -15,6 +15,7 @@ import {
   getTrapVisit,
   postTrapVisit,
   putTrapVisit,
+  deleteTrapVisit,
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
@@ -95,6 +96,17 @@ export default (mainRouter: Router) => {
           error: 'This crew member is already assigned to this trap visit.',
         })
       }
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.delete('/:trapVisitId', async (req, res) => {
+    try {
+      const { trapVisitId } = req.params
+      const deletedTrapVisitResponse = await deleteTrapVisit(trapVisitId)
+      res.status(200).json({ deleted: deletedTrapVisitResponse })
+    } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }

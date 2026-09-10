@@ -50,4 +50,27 @@ async function putExistingMark(
   }
 }
 
-export { postExistingMarks, getProgramExistingMarks, putExistingMark }
+// DELETE existingMarks - a leaf table (nothing else references it), so a
+// plain delete with no cascade is safe.
+async function deleteExistingMark(existingMarkId: string): Promise<number> {
+  try {
+    const deleted = await knex<ExistingMarksI>('existingMarks')
+      .where('id', existingMarkId)
+      .del()
+
+    if (!deleted) {
+      throw new Error(`Mark recapture ${existingMarkId} not found`)
+    }
+
+    return deleted
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  postExistingMarks,
+  getProgramExistingMarks,
+  putExistingMark,
+  deleteExistingMark,
+}
