@@ -196,6 +196,8 @@ export interface TrapLocations {
   dataRecorderId?: number
   dataRecorderAgencyId?: number
   siteName?: string
+  project?: string
+  equipmentId?: number
   coneSizeFt?: number
   xCoord?: number
   yCoord?: number

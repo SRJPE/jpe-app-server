@@ -105,6 +105,25 @@ async function getProgramFormFields(
       .leftJoin('unit', 'unit.id', 'formField.unitId')
       .leftJoin('equipment', 'equipment.id', 'programFields.equipmentId')
       .where('programFields.programId', programId)
+      // Return fields in the order admins configured — for every consumer at
+      // once (the mobile visit-setup bootstrap, /program/personnel/:id, and
+      // the dashboard). Without this, rows come back in arbitrary Postgres
+      // order and order_index — which is set on every row in the DB — is
+      // silently ignored everywhere.
+      //
+      // form_section is a Postgres enum, so sorting on it yields DECLARATION
+      // order (Visit Setup -> Trap Operations -> ... -> Genetics), which is
+      // the real data-collection flow. Sorting it as text would alphabetize
+      // it into nonsense (Fish Input first, Visit Setup last).
+      //
+      // id is the final tiebreak because live data has duplicate order_index
+      // values within a section; without it those rows could swap between
+      // requests and reshuffle the form on the tablet.
+      .orderBy([
+        { column: 'programFields.formSection' },
+        { column: 'programFields.orderIndex', order: 'asc', nulls: 'last' },
+        { column: 'programFields.id', order: 'asc' },
+      ])
 
     if (!withOptions) return programFormFields
 
