@@ -62,4 +62,27 @@ async function postTrapLocations(
   }
 }
 
-export { getProgramTrapLocations, postTrapLocations }
+// update trap location
+async function updateTrapLocation(
+  trapLocationId,
+  trapLocationValues
+): Promise<TrapLocations> {
+  try {
+    const valuesToUpdate = { ...trapLocationValues }
+    delete valuesToUpdate.id
+
+    await knex<TrapLocations>('trapLocations')
+      .where('id', trapLocationId)
+      .update(valuesToUpdate)
+
+    const updatedTrapLocation = await knex<TrapLocations>('trapLocations')
+      .where('id', trapLocationId)
+      .first()
+
+    return updatedTrapLocation
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getProgramTrapLocations, postTrapLocations, updateTrapLocation }
