@@ -231,6 +231,76 @@ async function createTrapVisit(trapVisitValues): Promise<{
   }
 }
 
+// Used by the mobile app / dashboard's export-then-reimport recovery flow to
+// check, before creating anything, whether a trap visit already exists on
+// the server — so a re-import never blindly duplicates data. Mirrors the two
+// things the DB itself treats as "this trap visit already exists":
+// trap_visit_uid (UNIQUE NULL) and the partial unique index
+// unique_trap_visit(program_id, trap_location_id, trap_visit_time_start).
+// Keeping this definition here (not duplicated client-side) means it can
+// never drift from what those constraints actually enforce.
+async function findDuplicateTrapVisit({
+  programId,
+  trapLocationId,
+  trapVisitTimeStart,
+  trapVisitUid,
+}: {
+  programId: number | string
+  trapLocationId: number | string
+  trapVisitTimeStart?: string
+  trapVisitUid?: string
+}): Promise<{
+  match: {
+    id: number
+    trapVisitUid: string | null
+    trapVisitTimeStart: string | null
+    programId: number
+    trapLocationId: number
+    catchRawCount: number
+  } | null
+}> {
+  try {
+    let match: any
+
+    if (trapVisitUid) {
+      match = await knex<any>('trapVisit')
+        .select('*')
+        .where('trapVisitUid', trapVisitUid)
+        .first()
+    }
+
+    if (!match && trapLocationId && trapVisitTimeStart) {
+      match = await knex<any>('trapVisit')
+        .select('*')
+        .where('programId', programId)
+        .andWhere('trapLocationId', trapLocationId)
+        .andWhere('trapVisitTimeStart', trapVisitTimeStart)
+        .first()
+    }
+
+    if (!match) {
+      return { match: null }
+    }
+
+    const [{ count }] = await knex('catchRaw')
+      .where('trapVisitId', (match as any).id)
+      .count('id as count')
+
+    return {
+      match: {
+        id: (match as any).id,
+        trapVisitUid: (match as any).trapVisitUid ?? null,
+        trapVisitTimeStart: (match as any).trapVisitTimeStart ?? null,
+        programId: (match as any).programId,
+        trapLocationId: (match as any).trapLocationId,
+        catchRawCount: Number(count),
+      },
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 function replaceNAWithNull(obj) {
   if (typeof obj !== 'object' || obj === null) {
     return obj
@@ -439,4 +509,5 @@ export {
   postTrapVisit,
   putTrapVisit,
   deleteTrapVisit,
+  findDuplicateTrapVisit,
 }
