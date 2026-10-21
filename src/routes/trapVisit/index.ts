@@ -16,6 +16,7 @@ import {
   postTrapVisit,
   putTrapVisit,
   deleteTrapVisit,
+  findDuplicateTrapVisit,
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
@@ -54,6 +55,40 @@ export default (mainRouter: Router) => {
             'This trap visit violates a data rule.',
         })
       }
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // GET /trap-visit/check-duplicate?programId=&trapLocationId=&trapVisitTimeStart=&trapVisitUid=
+  // Used by the export-then-reimport recovery flow (mobile app + dashboard)
+  // to check for an already-existing trap visit before creating anything.
+  // Registered before the generic GET /:trapVisitId route below so
+  // "check-duplicate" isn't matched as a trapVisitId.
+  trapVisitRouter.get('/check-duplicate', isAuthorized(), async (req, res) => {
+    try {
+      const { programId, trapLocationId, trapVisitTimeStart, trapVisitUid } =
+        req.query as {
+          programId?: string
+          trapLocationId?: string
+          trapVisitTimeStart?: string
+          trapVisitUid?: string
+        }
+
+      if (!programId || !trapLocationId) {
+        return res.status(400).send({
+          error: 'programId and trapLocationId query params are required.',
+        })
+      }
+
+      const result = await findDuplicateTrapVisit({
+        programId,
+        trapLocationId,
+        trapVisitTimeStart,
+        trapVisitUid,
+      })
+      res.status(200).send(result)
+    } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }
