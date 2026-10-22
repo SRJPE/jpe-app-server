@@ -1,5 +1,9 @@
 import { Router } from 'express'
-import { getProgramTrapLocations, postTrapLocations } from '../../models/trapLocations'
+import {
+  getProgramTrapLocations,
+  postTrapLocations,
+  updateTrapLocation,
+} from '../../models/trapLocations'
 
 const trapLocationsRouter = Router({ mergeParams: true })
 
@@ -24,6 +28,22 @@ export default (mainRouter: Router) => {
       const trapLocationsValues = req.body
       const createdTrapLocations = await postTrapLocations(trapLocationsValues)
       res.status(200).send(createdTrapLocations)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // PUT
+  trapLocationsRouter.put('/:trapLocationId', async (req, res) => {
+    try {
+      const { trapLocationId } = req.params
+      const trapLocationValues = req.body
+      const updatedTrapLocation = await updateTrapLocation(
+        trapLocationId,
+        trapLocationValues
+      )
+      res.status(200).send(updatedTrapLocation)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
