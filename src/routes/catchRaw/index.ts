@@ -72,6 +72,11 @@ export default (mainRouter: Router) => {
             'This crew member is already assigned to this applied mark.',
           catch_fish_condition_unique:
             'This fish condition is already recorded for this catch.',
+          // Normally resolved inside createCatchRaw (models/catchRaw/index.ts)
+          // without ever reaching here - this is a defense-in-depth fallback
+          // in case that resolution path is ever skipped (e.g. no clientUid
+          // sent, or the lookup inside createCatchRaw doesn't find a match).
+          catch_raw_client_uid_unique: 'This catch record already exists.',
         }
         return res.status(409).send({
           error:
