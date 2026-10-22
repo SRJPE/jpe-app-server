@@ -257,11 +257,46 @@ async function createCatchRaw(catchRawValues): Promise<{
       catchRawValues?.catchRawConditionalValues || []
     delete catchRawValues?.catchRawConditionalValues
 
-    const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
-      catchRawValues,
-      ['*']
-    )
-    const createdCatchRaw = createdCatchRawResponse?.[0]
+    let createdCatchRaw: any
+    try {
+      const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
+        catchRawValues,
+        ['*']
+      )
+      createdCatchRaw = createdCatchRawResponse?.[0]
+    } catch (error: any) {
+      // catch_raw_client_uid_unique (trap_visit_id, client_uid) - this exact
+      // fish record was already inserted by an earlier attempt, most likely
+      // because this is a retry of a batch that partially succeeded before a
+      // timeout/disconnect. postCatchRaw runs one createCatchRaw per fish via
+      // Promise.all, so letting this reject would fail the *entire* batch
+      // (including genuinely-new fish in the same submission) rather than
+      // just resolving to the already-created row. Only short-circuit on
+      // this specific constraint - any other error still fails normally.
+      if (
+        error.code === '23505' &&
+        error.constraint === 'catch_raw_client_uid_unique' &&
+        catchRawValues.clientUid
+      ) {
+        const existing = await knex<CatchRaw>('catchRaw')
+          .where({
+            trapVisitId: catchRawValues.trapVisitId,
+            clientUid: catchRawValues.clientUid,
+          })
+          .first()
+        if (existing) {
+          return {
+            createdCatchRawResponse: existing,
+            createdMarkAppliedResponse: [],
+            createdExistingMarksResponse: [],
+            createdGeneticSamplingDataResponse: [],
+            createdCatchFishConditionResponse: [],
+            createdCatchRawConditionalValuesResponse: [],
+          } as any
+        }
+      }
+      throw error
+    }
 
     let createdExistingMarksResponse = []
     let createdMarkAppliedResponse = []
