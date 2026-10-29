@@ -1,5 +1,6 @@
 import db from '../../db'
 import { MarkAppliedI, MarkAppliedCrewI, ExistingMarksI } from '../../interfaces'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -24,9 +25,14 @@ async function putMarkApplied(
   try {
     const markData = { ...markAppliedObject.createdMarkAppliedResponse }
     delete markData.id
-    const updated = await knex<MarkAppliedI>('markApplied')
-      .where('id', markAppliedId)
-      .update(markData, ['*'])
+    const expectedUpdatedAt = takeExpectedUpdatedAt(markData)
+    const updated = await versionedUpdate(
+      knex,
+      'markApplied',
+      markAppliedId,
+      markData,
+      expectedUpdatedAt
+    )
     return { createdMarkAppliedResponse: updated[0] }
   } catch (error) {
     throw error

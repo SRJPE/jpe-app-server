@@ -21,6 +21,7 @@ import {
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
 import { isAuthorized } from '../../middleware/auth-middleware'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -143,6 +144,7 @@ export default (mainRouter: Router) => {
       const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
       res.status(200).send(editedTrapVisit)
     } catch (error: any) {
+      if (sendStaleWrite(res, error)) return
       if (error.code === '23505') {
         return res.status(409).send({
           error: 'This crew member is already assigned to this trap visit.',

@@ -35,6 +35,9 @@ async function getConditionOptions(): Promise<Array<any>> {
   }
 }
 
+// No expectedUpdatedAt stale check here (unlike catchRaw, trapVisit,
+// release, existingMarks, markApplied): genetic sampling rows don't carry
+// an updatedAt the client can echo back, so this stays last-write-wins.
 async function putGeneticSamplingData(
   geneticSamplingId: string,
   geneticSamplingObject: Record<string, any>

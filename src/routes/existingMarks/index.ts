@@ -5,6 +5,7 @@ import {
   putExistingMark,
   deleteExistingMark,
 } from '../../models/catchRaw/existingMarks'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const existingMarksRouter = Router({ mergeParams: true })
 
@@ -30,6 +31,7 @@ export default (mainRouter: Router) => {
       const updated = await putExistingMark(existingMarkId, req.body)
       res.status(200).send(updated)
     } catch (error) {
+      if (sendStaleWrite(res, error)) return
       console.error(error)
       res.status(400).send(error)
     }

@@ -6,6 +6,7 @@ import {
   putRelease,
   deleteRelease,
 } from '../../models/release'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const releaseRouter = Router({ mergeParams: true })
 
@@ -42,6 +43,7 @@ export default (mainRouter: Router) => {
       const updatedRelease = await putRelease(releaseId, req.body)
       res.status(200).send(updatedRelease)
     } catch (error) {
+      if (sendStaleWrite(res, error)) return
       console.error(error)
       res.status(400).send(error)
     }

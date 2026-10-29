@@ -8,6 +8,7 @@ import {
   putCatchRaw,
 } from '../../models/catchRaw'
 import { isAuthorized } from '../../middleware/auth-middleware'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const catchRawRouter = Router({ mergeParams: true })
 
@@ -96,6 +97,7 @@ export default (mainRouter: Router) => {
       const editedCatchRawRecord = await putCatchRaw(catchRawId, catchRawObject)
       res.status(200).send(editedCatchRawRecord)
     } catch (error) {
+      if (sendStaleWrite(res, error)) return
       console.error(error)
       res.status(400).send(error)
     }

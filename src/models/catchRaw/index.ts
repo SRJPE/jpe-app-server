@@ -14,6 +14,7 @@ import { postMarkApplied } from './markApplied'
 import { postMarkAppliedCrew } from './markAppliedCrew'
 import { postCatchFishCondition } from './catchfishCondition'
 import { postCatchRawConditionalValues } from './catchRawConditionalValues'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -465,9 +466,16 @@ async function putCatchRaw(
     delete catchRawObject.createdCatchRawResponse.id
     delete catchRawObject.createdCatchRawResponse.trapVisitTimeEnd
     delete catchRawObject.createdCatchRawResponse.trapVisitTimeStart
-    let updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
-      .where('id', catchRawId)
-      .update(catchRawObject.createdCatchRawResponse, ['*'])
+    const expectedUpdatedAt = takeExpectedUpdatedAt(
+      catchRawObject.createdCatchRawResponse
+    )
+    let updatedCatchRawRecord = await versionedUpdate(
+      knex,
+      'catchRaw',
+      catchRawId,
+      catchRawObject.createdCatchRawResponse,
+      expectedUpdatedAt
+    )
 
     // Perform a join using the updated record's data
     if (updatedCatchRawRecord.length > 0) {

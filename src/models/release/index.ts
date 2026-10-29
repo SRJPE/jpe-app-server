@@ -2,6 +2,7 @@ import db from '../../db'
 import { Release, ReleaseCrew, ReleaseMarks } from '../../interfaces'
 import { postReleaseMarks } from './releaseMarks'
 import { postReleaseCrew } from './releaseCrew'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -136,9 +137,14 @@ async function putRelease(
   try {
     const releaseData = { ...releaseObject.createdReleaseResponse }
     delete releaseData.id
-    const updated = await knex<Release>('release')
-      .where('id', releaseId)
-      .update(releaseData, ['*'])
+    const expectedUpdatedAt = takeExpectedUpdatedAt(releaseData)
+    const updated = await versionedUpdate(
+      knex,
+      'release',
+      releaseId,
+      releaseData,
+      expectedUpdatedAt
+    )
     return { createdReleaseResponse: updated[0] }
   } catch (error) {
     throw error

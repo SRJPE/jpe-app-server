@@ -1,4 +1,5 @@
 import db from '../../db'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 import {
   TrapVisit,
   TrapVisitCrew,
@@ -322,6 +323,9 @@ function replaceNAWithNull(obj) {
 }
 
 // PUT trapVisit - admin only route
+// Main row (with the optional expectedUpdatedAt stale check), crew and
+// environmental measures are written in one transaction, so a stale or
+// failing save leaves the visit untouched.
 async function putTrapVisit(
   trapVisitId: string,
   trapVisitValues: Record<string, any>
@@ -329,51 +333,59 @@ async function putTrapVisit(
   const trapVisitValuesNoNull = replaceNAWithNull(trapVisitValues)
 
   try {
-    if (trapVisitValuesNoNull.hasOwnProperty('createdTrapVisitCrewResponse')) {
-      // delete all existing crew from trap visit
-      await knex<TrapVisit>('trapVisitCrew')
-        .where('trapVisitId', trapVisitId)
-        .del()
+    await knex.transaction(async trx => {
+      const mainRow = { ...(trapVisitValuesNoNull.createdTrapVisitResponse ?? {}) }
+      delete mainRow.id
+      const expectedUpdatedAt = takeExpectedUpdatedAt(mainRow)
+      // Always runs, even with no field changes: it performs the stale
+      // check and bumps updatedAt for crew/environmental-only edits.
+      await versionedUpdate(trx, 'trapVisit', trapVisitId, mainRow, expectedUpdatedAt)
 
-      // insert new crew
-      const rowsToInsert =
-        trapVisitValuesNoNull.createdTrapVisitCrewResponse.map(personnelId => {
-          return {
-            personnelId,
-            trapVisitId,
-          }
-        })
-      await knex<TrapVisit>('trapVisitCrew').insert(rowsToInsert, ['*'])
-      delete trapVisitValuesNoNull.createdTrapVisitCrewResponse
-    }
+      if (trapVisitValuesNoNull.hasOwnProperty('createdTrapVisitCrewResponse')) {
+        // delete all existing crew from trap visit
+        await trx<TrapVisit>('trapVisitCrew')
+          .where('trapVisitId', trapVisitId)
+          .del()
 
-    if (
-      trapVisitValuesNoNull.hasOwnProperty(
-        'createdTrapVisitEnvironmentalResponse'
-      )
-    ) {
-      const envItems: Array<any> =
-        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
+        // insert new crew
+        const rowsToInsert =
+          trapVisitValuesNoNull.createdTrapVisitCrewResponse.map(personnelId => {
+            return {
+              personnelId,
+              trapVisitId,
+            }
+          })
+        if (rowsToInsert.length) {
+          await trx<TrapVisit>('trapVisitCrew').insert(rowsToInsert, ['*'])
+        }
+      }
 
-      await Promise.all(
-        envItems.map(async measure => {
+      if (
+        trapVisitValuesNoNull.hasOwnProperty(
+          'createdTrapVisitEnvironmentalResponse'
+        )
+      ) {
+        const envItems: Array<any> =
+          trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
+
+        for (const measure of envItems) {
           const { id, measureName, measureValueNumeric, measureValueText } =
             measure
           if (id) {
-            await knex('trapVisitEnvironmental').where('id', id).update({
+            await trx('trapVisitEnvironmental').where('id', id).update({
               measureValueNumeric,
               measureValueText,
             })
           } else {
-            const existing = await knex('trapVisitEnvironmental')
+            const existing = await trx('trapVisitEnvironmental')
               .where({ trapVisitId, measureName })
               .first()
             if (existing) {
-              await knex('trapVisitEnvironmental')
+              await trx('trapVisitEnvironmental')
                 .where('id', existing.id)
                 .update({ measureValueNumeric, measureValueText })
             } else {
-              await knex('trapVisitEnvironmental').insert({
+              await trx('trapVisitEnvironmental').insert({
                 trapVisitId,
                 measureName,
                 measureValueNumeric,
@@ -381,17 +393,9 @@ async function putTrapVisit(
               })
             }
           }
-        })
-      )
-
-      delete trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
-    }
-
-    delete trapVisitValuesNoNull.createdTrapVisitResponse.id
-
-    await knex<TrapVisit>('trapVisit')
-      .where('id', trapVisitId)
-      .update(trapVisitValuesNoNull.createdTrapVisitResponse, ['*'])
+        }
+      }
+    })
 
     const updatedTrapVisit = await getTrapVisit(trapVisitId)
     return updatedTrapVisit
