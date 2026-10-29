@@ -269,6 +269,8 @@ async function postProgramFormField(values): Promise<any> {
   const programId = values.programId ?? values.program_id
   const equipmentId =
     values.equipmentId ?? values.equipment_id ?? null
+  const formSection = values.formSection ?? values.form_section
+  const orderIndex = values.orderIndex ?? values.order_index
 
   try {
     return await knex.transaction(async trx => {
@@ -278,6 +280,18 @@ async function postProgramFormField(values): Promise<any> {
         formFieldId,
         equipmentId,
       })
+
+      // Make room for the new field at orderIndex by bumping every sibling
+      // at or past that position up by one, within the same program + section.
+      // Bulk WHERE order_index >= ? shifts any rows that already share an
+      // index together (e.g. equipment-variant alternatives occupying the
+      // same slot), so it stays correct without knowing about that grouping.
+      if (orderIndex != null) {
+        await trx('programFields')
+          .where({ programId, formSection })
+          .andWhere('orderIndex', '>=', orderIndex)
+          .increment('orderIndex', 1)
+      }
 
       const formField = await trx('formField').where({ id: formFieldId }).first()
 
