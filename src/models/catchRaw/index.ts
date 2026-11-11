@@ -5,6 +5,7 @@ import {
   GeneticSamplingDataI,
   MarkAppliedI,
   CatchFishConditionI,
+  CatchRawConditionalValues,
 } from '../../interfaces'
 import { postExistingMarks } from './existingMarks'
 import { postGeneticSamplingData } from './geneticSamplingData'
@@ -12,6 +13,8 @@ import { postGeneticSamplingCrew } from './geneticSamplingCrew'
 import { postMarkApplied } from './markApplied'
 import { postMarkAppliedCrew } from './markAppliedCrew'
 import { postCatchFishCondition } from './catchfishCondition'
+import { postCatchRawConditionalValues } from './catchRawConditionalValues'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -23,7 +26,19 @@ async function getCatchRawRecord(
       .select('*')
       .where('id', catchRawId)
 
-    return catchRawRecords[0]
+    const catchRawConditionalValuesData = await knex<any>(
+      'catchRawConditionalValues'
+    )
+      .select('*')
+      .whereIn('catchRawId', [catchRawId])
+
+    return {
+      ...catchRawRecords[0],
+      createdCatchRawConditionalValuesResponse:
+        catchRawConditionalValuesData.length
+          ? catchRawConditionalValuesData
+          : null,
+    }
   } catch (error) {
     throw error
   }
@@ -37,7 +52,30 @@ async function getTrapVisitCatchRawRecords(
       .select('*')
       .where('trapVisitId', trapVisitId)
 
-    return catchRawRecords
+    const catchRawIds = catchRawRecords.map(catchRaw => catchRaw.id)
+
+    const catchRawConditionalValuesData = await knex<any>(
+      'catchRawConditionalValues'
+    )
+      .select('*')
+      .whereIn('catchRawId', catchRawIds)
+
+    const conditionalValuesByCatchRawId = catchRawConditionalValuesData.reduce(
+      (acc, row) => {
+        if (!acc[row.catchRawId]) {
+          acc[row.catchRawId] = []
+        }
+        acc[row.catchRawId].push(row)
+        return acc
+      },
+      {}
+    )
+
+    return catchRawRecords.map(catchRaw => ({
+      ...catchRaw,
+      createdCatchRawConditionalValuesResponse:
+        conditionalValuesByCatchRawId[catchRaw.id] || null,
+    }))
   } catch (error) {
     throw error
   }
@@ -45,19 +83,28 @@ async function getTrapVisitCatchRawRecords(
 
 async function getProgramCatchRawRecords(
   programId: number | string,
-  limit?: number
+  limit?: number,
+  allTime?: boolean
 ) {
   try {
-    // get current date, set year to previous year
     const pastYear = new Date()
     pastYear.setFullYear(pastYear.getFullYear() - 1)
 
     let query = knex<CatchRaw>('catchRaw')
-      .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+      .select(
+        'catchRaw.*',
+        'trapVisit.trapVisitTimeEnd',
+        'trapVisit.trapVisitTimeStart',
+        'trapLocations.trapName'
+      )
       .where('catchRaw.programId', programId)
-      .andWhere('catchRaw.created_at', '>=', pastYear)
-      .orderBy('catchRaw.id')
+      .orderBy('catchRaw.id', 'desc')
       .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
+      .leftJoin('trapLocations', 'trapVisit.trapLocationId', 'trapLocations.id')
+
+    if (!allTime) {
+      query = query.andWhere('catchRaw.created_at', '>=', pastYear)
+    }
 
     if (limit) {
       query = query.limit(limit)
@@ -70,23 +117,63 @@ async function getProgramCatchRawRecords(
     // all catch records of a program
     const catchRawIds = catchRaws.map(catchRaw => catchRaw.id)
 
-    // all mark applied, existing marks, genetic sample, and fish condition records of program
+    // all mark applied, existing marks, genetic sample, fish condition, and conditional value records of program
     const [
       markAppliedData,
       existingMarksData,
       geneticSampleData,
       catchFishCondition,
+      catchRawConditionalValuesData,
     ] = await Promise.all([
       knex<MarkAppliedI>('markApplied')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'markApplied.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .join('catchRaw', 'markApplied.catchRawId', 'catchRaw.id')
+        .whereIn('catchRawId', catchRawIds)
+        .modify(q => {
+          if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear)
+        }),
       knex<ExistingMarksI>('existingMarks')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'existingMarks.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .join('catchRaw', 'existingMarks.catchRawId', 'catchRaw.id')
+        .whereIn('catchRawId', catchRawIds)
+        .modify(q => {
+          if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear)
+        }),
       knex<GeneticSamplingDataI>('geneticSamplingData')
-        .select('*')
-        .whereIn('catchRawId', catchRawIds),
+        .select(
+          'geneticSamplingData.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId',
+          'take.code as takeCode',
+          'condition.code as conditionCode'
+        )
+        .join('catchRaw', 'geneticSamplingData.catchRawId', 'catchRaw.id')
+        .leftJoin('take', 'geneticSamplingData.take', 'take.id')
+        .leftJoin('condition', 'geneticSamplingData.condition', 'condition.id')
+        .whereIn('catchRawId', catchRawIds)
+        .modify(q => {
+          if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear)
+        }),
       knex<CatchFishConditionI>('catchFishCondition')
+        .select(
+          'catchFishCondition.*',
+          'catchRaw.createdAt as catchRawCreatedAt',
+          'catchRaw.programId'
+        )
+        .whereIn('catchRawId', catchRawIds)
+        .join('catchRaw', 'catchFishCondition.catchRawId', 'catchRaw.id')
+        .modify(q => {
+          if (!allTime) q.andWhere('catchRaw.created_at', '>=', pastYear)
+        }),
+      knex<any>('catchRawConditionalValues')
         .select('*')
         .whereIn('catchRawId', catchRawIds),
     ])
@@ -116,6 +203,10 @@ async function getProgramCatchRawRecords(
         row => row.catchRawId === catchRaw.id
       )
 
+      const conditionalValues = catchRawConditionalValuesData.filter(
+        row => row.catchRawId === catchRaw.id
+      )
+
       const release = releaseData.find(row => row.catchRawId === catchRaw.id)
 
       return {
@@ -129,6 +220,9 @@ async function getProgramCatchRawRecords(
           : null,
         createdCatchFishConditionResponse: fishCondition.length
           ? fishCondition
+          : null,
+        createdCatchRawConditionalValuesResponse: conditionalValues.length
+          ? conditionalValues
           : null,
         releaseResponse: release || null,
       }
@@ -149,6 +243,7 @@ async function createCatchRaw(catchRawValues): Promise<{
   createdMarkAppliedResponse: Array<MarkAppliedI>
   createdGeneticSamplingDataResponse: Array<GeneticSamplingDataI>
   createdCatchFishConditionResponse: Array<CatchFishConditionI>
+  createdCatchRawConditionalValuesResponse: Array<CatchRawConditionalValues>
 }> {
   try {
     const existingMarks = catchRawValues?.existingMarks || []
@@ -159,17 +254,71 @@ async function createCatchRaw(catchRawValues): Promise<{
     delete catchRawValues?.appliedMarks
     const catchFishCondition = catchRawValues?.fishCondition || []
     delete catchRawValues?.fishCondition
+    const catchRawConditionalValues =
+      catchRawValues?.catchRawConditionalValues || []
+    delete catchRawValues?.catchRawConditionalValues
 
-    const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
-      catchRawValues,
-      ['*']
-    )
-    const createdCatchRaw = createdCatchRawResponse?.[0]
+    let createdCatchRaw: any
+    try {
+      const createdCatchRawResponse = await knex<CatchRaw>('catchRaw').insert(
+        catchRawValues,
+        ['*']
+      )
+      createdCatchRaw = createdCatchRawResponse?.[0]
+    } catch (error: any) {
+      // catch_raw_client_uid_unique (trap_visit_id, client_uid) - this exact
+      // fish record was already inserted by an earlier attempt, most likely
+      // because this is a retry of a batch that partially succeeded before a
+      // timeout/disconnect. postCatchRaw runs one createCatchRaw per fish via
+      // Promise.all, so letting this reject would fail the *entire* batch
+      // (including genuinely-new fish in the same submission) rather than
+      // just resolving to the already-created row. Only short-circuit on
+      // this specific constraint - any other error still fails normally.
+      if (
+        error.code === '23505' &&
+        error.constraint === 'catch_raw_client_uid_unique' &&
+        catchRawValues.clientUid
+      ) {
+        const existing = await knex<CatchRaw>('catchRaw')
+          .where({
+            trapVisitId: catchRawValues.trapVisitId,
+            clientUid: catchRawValues.clientUid,
+          })
+          .first()
+        if (existing) {
+          return {
+            createdCatchRawResponse: existing,
+            createdMarkAppliedResponse: [],
+            createdExistingMarksResponse: [],
+            createdGeneticSamplingDataResponse: [],
+            createdCatchFishConditionResponse: [],
+            createdCatchRawConditionalValuesResponse: [],
+          } as any
+        }
+      }
+      throw error
+    }
 
     let createdExistingMarksResponse = []
     let createdMarkAppliedResponse = []
     let createdGeneticSamplingDataResponse = []
     let createdCatchFishConditionResponse = []
+
+    const catchRawConditionalValuesPayload = []
+
+    catchRawConditionalValues?.forEach(measureObject => {
+      if (measureObject.measureValueNumeric === undefined) return
+
+      catchRawConditionalValuesPayload.push({
+        catchRawId: createdCatchRaw.id,
+        ...measureObject,
+      })
+    })
+
+    const createdCatchRawConditionalValuesResponse =
+      catchRawConditionalValuesPayload.length
+        ? await postCatchRawConditionalValues(catchRawConditionalValuesPayload)
+        : null
 
     if (existingMarks?.length > 0) {
       const existingMarksPayload = existingMarks.map((markObj: any) => {
@@ -183,9 +332,8 @@ async function createCatchRaw(catchRawValues): Promise<{
         }
       })
 
-      createdExistingMarksResponse = await postExistingMarks(
-        existingMarksPayload
-      )
+      createdExistingMarksResponse =
+        await postExistingMarks(existingMarksPayload)
     }
 
     if (geneticSamplingData?.length > 0) {
@@ -231,9 +379,8 @@ async function createCatchRaw(catchRawValues): Promise<{
             updatedAt: createdCatchRaw.updatedAt,
             ...appliedMarkSubmissionCopy,
           }
-          const createdSingleMarkAppliedResponse = await postMarkApplied(
-            markAppliedPayload
-          )
+          const createdSingleMarkAppliedResponse =
+            await postMarkApplied(markAppliedPayload)
 
           const markAppliedCrewPayload: any = {
             personnel: crewMember,
@@ -269,6 +416,7 @@ async function createCatchRaw(catchRawValues): Promise<{
       createdExistingMarksResponse,
       createdGeneticSamplingDataResponse,
       createdCatchFishConditionResponse,
+      createdCatchRawConditionalValuesResponse,
     }
   } catch (error) {
     console.log('error', error)
@@ -317,21 +465,36 @@ async function putCatchRaw(
   try {
     delete catchRawObject.createdCatchRawResponse.id
     delete catchRawObject.createdCatchRawResponse.trapVisitTimeEnd
-    let updatedCatchRawRecord = await knex<CatchRaw>('catchRaw')
-      .where('id', catchRawId)
-      .update(catchRawObject.createdCatchRawResponse, ['*'])
+    delete catchRawObject.createdCatchRawResponse.trapVisitTimeStart
+    const expectedUpdatedAt = takeExpectedUpdatedAt(
+      catchRawObject.createdCatchRawResponse
+    )
+    let updatedCatchRawRecord = await versionedUpdate(
+      knex,
+      'catchRaw',
+      catchRawId,
+      catchRawObject.createdCatchRawResponse,
+      expectedUpdatedAt
+    )
 
     // Perform a join using the updated record's data
     if (updatedCatchRawRecord.length > 0) {
       updatedCatchRawRecord = await knex('catchRaw')
-        .select('catchRaw.*', 'trapVisit.trapVisitTimeEnd')
+        .select(
+          'catchRaw.*',
+          'trapVisit.trapVisitTimeEnd',
+          'trapVisit.trapVisitTimeStart'
+        )
         .leftJoin('trapVisit', 'catchRaw.trapVisitId', 'trapVisit.id')
         .where('catchRaw.id', updatedCatchRawRecord[0].id) // Use the updated record's ID
     }
 
     let updatedMarkApplied = []
 
-    if (catchRawObject.createdMarkAppliedResponse) {
+    if (
+      catchRawObject.createdMarkAppliedResponse &&
+      Array.isArray(catchRawObject.createdMarkAppliedResponse)
+    ) {
       updatedMarkApplied = await Promise.all(
         catchRawObject.createdMarkAppliedResponse.map(async markApplied => {
           let id = markApplied.id
@@ -348,43 +511,158 @@ async function putCatchRaw(
 
     let updatedExistingMarks = []
 
-    if (catchRawObject.createdExistingMarksResponse) {
+    if (
+      catchRawObject.createdExistingMarksResponse &&
+      Array.isArray(catchRawObject.createdExistingMarksResponse)
+    ) {
       updatedExistingMarks = await Promise.all(
         catchRawObject.createdExistingMarksResponse.map(async existingMark => {
-          let id = existingMark.id
-          delete existingMark.id
-          await knex<ExistingMarksI>('existingMarks')
-            .where('id', id)
-            .update(existingMark, ['*'])
+          let id = existingMark?.id
+          delete existingMark?.id
+          if (id) {
+            const updatedExistingMark = await knex<ExistingMarksI>(
+              'existingMarks'
+            )
+              .where('id', id)
+              .update(existingMark, ['*'])
+            return updatedExistingMark[0]
+          } else {
+            return existingMark
+          }
         })
       )
     }
 
     let updatedGeneticSamplingData = []
 
-    if (catchRawObject.createdGeneticSamplingDataResponse) {
+    if (
+      catchRawObject.createdGeneticSamplingDataResponse &&
+      Array.isArray(catchRawObject.createdGeneticSamplingDataResponse)
+    ) {
       updatedGeneticSamplingData = await Promise.all(
         catchRawObject.createdGeneticSamplingDataResponse.map(
           async geneticSample => {
-            let id = geneticSample.id
-            delete geneticSample.id
-            await knex<GeneticSamplingDataI>('geneticSamplingData')
-              .where('id', id)
-              .update(geneticSample, ['*'])
+            let id = geneticSample?.id
+            delete geneticSample?.id
+            if (id) {
+              const updatedGeneticSample = await knex<GeneticSamplingDataI>(
+                'geneticSamplingData'
+              )
+                .where('id', id)
+                .update(geneticSample, ['*'])
+              return updatedGeneticSample[0]
+            } else return geneticSample
+          }
+        )
+      )
+    } else if (
+      Array.isArray(catchRawObject.createdGeneticSamplingDataResponse)
+    ) {
+      updatedGeneticSamplingData = await Promise.all(
+        catchRawObject.createdGeneticSamplingDataResponse.map(
+          async geneticSample => {
+            let id = geneticSample?.id
+            delete geneticSample?.id
+            if (id) {
+              const updatedGeneticSample = await knex<GeneticSamplingDataI>(
+                'geneticSamplingData'
+              )
+                .where('id', id)
+                .update(geneticSample, ['*'])
+              return updatedGeneticSample[0]
+            } else return geneticSample
           }
         )
       )
     }
 
-    let updatedRelease = null
+    let updatedCatchRawConditionalValues = null
 
-    if (catchRawObject.releaseResponse) {
-      let id = catchRawObject.releaseResponse.id
-      delete catchRawObject.releaseResponse.id
-      updatedRelease = await knex('release')
-        .where('id', id)
-        .update(catchRawObject.releaseResponse, ['*'])
+    if (
+      catchRawObject.createdCatchRawConditionalValuesResponse &&
+      Array.isArray(catchRawObject.createdCatchRawConditionalValuesResponse)
+    ) {
+      const conditionalValueItems: Array<any> =
+        catchRawObject.createdCatchRawConditionalValuesResponse
+
+      updatedCatchRawConditionalValues = await Promise.all(
+        conditionalValueItems.map(async measure => {
+          const { id, measureName, measureValueNumeric, measureValueText } =
+            measure
+          if (id) {
+            const updated = await knex('catchRawConditionalValues')
+              .where('id', id)
+              .update(
+                { measureValueNumeric, measureValueText },
+                ['*']
+              )
+            return updated[0]
+          } else {
+            const existing = await knex('catchRawConditionalValues')
+              .where({ catchRawId, measureName })
+              .first()
+            if (existing) {
+              const updated = await knex('catchRawConditionalValues')
+                .where('id', existing.id)
+                .update(
+                  { measureValueNumeric, measureValueText },
+                  ['*']
+                )
+              return updated[0]
+            } else {
+              const inserted = await knex('catchRawConditionalValues').insert(
+                {
+                  catchRawId,
+                  measureName,
+                  measureValueNumeric,
+                  measureValueText,
+                },
+                ['*']
+              )
+              return inserted[0]
+            }
+          }
+        })
+      )
     }
+
+    // shouldn't be able to update a release from put catch raw
+    // let updatedRelease = null
+
+    // if (catchRawObject.releaseResponse && catchRawObject.releaseResponse.id) {
+    //   let id = catchRawObject.releaseResponse.releaseId
+    //   const updatedObj = (({
+    //     programId,
+    //     releasePurposeId,
+    //     releaseSiteId,
+    //     releasedAt,
+    //     markedAt,
+    //     runHatcheryFish,
+    //     hatcheryFishWeight,
+    //     totalWildFishReleased,
+    //     totalHatcheryFishReleased,
+    //     totalWildFishDead,
+    //     totalHatcheryFishDead,
+    //     hatcheryFishForkLength,
+    //   }) => ({
+    //     programId,
+    //     releasePurposeId,
+    //     releaseSiteId,
+    //     releasedAt,
+    //     markedAt,
+    //     runHatcheryFish,
+    //     hatcheryFishWeight,
+    //     totalWildFishReleased,
+    //     totalHatcheryFishReleased,
+    //     totalWildFishDead,
+    //     totalHatcheryFishDead,
+    //     hatcheryFishForkLength,
+    //   }))(catchRawObject.releaseResponse)
+
+    //   updatedRelease = await knex('release')
+    //     .where('id', id)
+    //     .update(updatedObj, ['*'])
+    // }
 
     return {
       createdCatchRawResponse: updatedCatchRawRecord[0],
@@ -397,7 +675,9 @@ async function putCatchRaw(
       createdGeneticSamplingDataResponse: updatedGeneticSamplingData.length
         ? updatedGeneticSamplingData
         : null,
-      releaseResponse: updatedRelease || null,
+      createdCatchRawConditionalValuesResponse:
+        updatedCatchRawConditionalValues,
+      releaseResponse: catchRawObject.releaseResponse || null,
     }
   } catch (error) {
     throw error
@@ -420,6 +700,10 @@ const deleteCatchRaw = async (catchRawId: string) => {
       .del()
 
     await knex<CatchFishConditionI>('catchFishCondition')
+      .where('catchRawId', catchRawId)
+      .del()
+
+    await knex<CatchRawConditionalValues>('catchRawConditionalValues')
       .where('catchRawId', catchRawId)
       .del()
 

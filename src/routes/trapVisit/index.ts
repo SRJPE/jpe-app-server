@@ -15,19 +15,80 @@ import {
   getTrapVisit,
   postTrapVisit,
   putTrapVisit,
+  deleteTrapVisit,
+  findDuplicateTrapVisit,
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
+import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
+import { isAuthorized } from '../../middleware/auth-middleware'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const trapVisitRouter = Router({ mergeParams: true })
+
+// Friendly messages for trap_visit's CHECK constraints (Postgres error code
+// 23514), keyed by the violated constraint's name — otherwise these surface
+// to the client as a raw, unreadable Postgres error object.
+const CHECK_CONSTRAINT_MESSAGES: Record<string, string> = {
+  why_trap_not_functioning_check:
+    'Why Trap Not Functioning is required when Trap Functioning is "functioning but not normally" or "not functioning".',
+  why_fish_not_processed_check:
+    'Why Fish Not Processed is required when Fish Processed indicates no data was recorded.',
+}
 
 export default (mainRouter: Router) => {
   mainRouter.use('/trap-visit', trapVisitRouter)
 
-  trapVisitRouter.post('/', async (req, res) => {
+  trapVisitRouter.post('/', isAuthorized(), async (req, res) => {
     try {
       const trapVisitValues = req.body
       const createdTrapVisit = await postTrapVisit(trapVisitValues)
       res.status(200).send(createdTrapVisit)
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this trap visit.',
+        })
+      }
+      if (error.code === '23514') {
+        return res.status(400).send({
+          error:
+            CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
+            'This trap visit violates a data rule.',
+        })
+      }
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // GET /trap-visit/check-duplicate?programId=&trapLocationId=&trapVisitTimeStart=&trapVisitUid=
+  // Used by the export-then-reimport recovery flow (mobile app + dashboard)
+  // to check for an already-existing trap visit before creating anything.
+  // Registered before the generic GET /:trapVisitId route below so
+  // "check-duplicate" isn't matched as a trapVisitId.
+  trapVisitRouter.get('/check-duplicate', isAuthorized(), async (req, res) => {
+    try {
+      const { programId, trapLocationId, trapVisitTimeStart, trapVisitUid } =
+        req.query as {
+          programId?: string
+          trapLocationId?: string
+          trapVisitTimeStart?: string
+          trapVisitUid?: string
+        }
+
+      if (!programId || !trapLocationId) {
+        return res.status(400).send({
+          error: 'programId and trapLocationId query params are required.',
+        })
+      }
+
+      const result = await findDuplicateTrapVisit({
+        programId,
+        trapLocationId,
+        trapVisitTimeStart,
+        trapVisitUid,
+      })
+      res.status(200).send(result)
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
@@ -35,9 +96,10 @@ export default (mainRouter: Router) => {
   })
 
   // GET /trap-visit/dropdowns
-  trapVisitRouter.get('/dropdowns', async (req, res) => {
+  trapVisitRouter.get('/dropdowns/:userId', async (req, res) => {
+    const userId = req.params?.userId || ''
     try {
-      const trapVisitDropdowns = await getAllTrapVisitDropdowns()
+      const trapVisitDropdowns = await getAllTrapVisitDropdowns(userId)
       res.status(200).send(trapVisitDropdowns)
     } catch (error) {
       console.error(error)
@@ -56,16 +118,24 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapVisitRouter.get('/program/:programId', async (req, res) => {
-    try {
-      const { programId } = req.params
-      const trapVisits = await getProgramTrapVisits(programId)
-      res.status(200).send(trapVisits)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
+  trapVisitRouter.get(
+    '/program/:programId',
+    isAuthorized(), // Middleware function
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const { allTime } = req.query
+        const trapVisits = await getProgramTrapVisits(
+          programId,
+          allTime === 'true'
+        )
+        res.status(200).send(trapVisits)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
     }
-  })
+  )
 
   trapVisitRouter.put('/:trapVisitId', async (req, res) => {
     try {
@@ -73,22 +143,78 @@ export default (mainRouter: Router) => {
       const trapVisitValues = req.body
       const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
       res.status(200).send(editedTrapVisit)
+    } catch (error: any) {
+      if (sendStaleWrite(res, error)) return
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this trap visit.',
+        })
+      }
+      if (error.code === '23514') {
+        return res.status(400).send({
+          error:
+            CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
+            'This trap visit violates a data rule.',
+        })
+      }
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  trapVisitRouter.delete('/:trapVisitId', async (req, res) => {
+    try {
+      const { trapVisitId } = req.params
+      const deletedTrapVisitResponse = await deleteTrapVisit(trapVisitId)
+      res.status(200).json({ deleted: deletedTrapVisitResponse })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)
     }
   })
 
-  trapVisitRouter.get('/visit-setup/default/:personnelId', async (req, res) => {
+  trapVisitRouter.get(
+    '/visit-setup/default/:personnelId',
+    isAuthorized(), // Middleware function
+    async (req, res) => {
+      try {
+        const { personnelId } = req.params
+        const trapSetupDefaultValues =
+          await getVisitSetupDefaultValues(personnelId)
+        res.status(200).send(trapSetupDefaultValues)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    }
+  )
+
+  trapVisitRouter.put('/:trapVisitId/environmental', async (req, res) => {
     try {
-      const { personnelId } = req.params
-      const trapSetupDefaultValues = await getVisitSetupDefaultValues(
-        personnelId
-      )
-      res.status(200).send(trapSetupDefaultValues)
+      const { trapVisitId } = req.params
+      const { waterTurbidity } = req.body
+
+      const trapVisitEnvironmentalResponse = await putTrapVisitWaterTurbidity({
+        trapVisitId,
+        waterTurbidity,
+      })
+
+      if (trapVisitEnvironmentalResponse) {
+        res.status(200).send({
+          status: 200,
+          trapVisitId,
+          waterTurbidity,
+        })
+      } else {
+        res.status(400).send({
+          status: 400,
+          trapVisitId,
+          waterTurbidity,
+        })
+      }
     } catch (error) {
       console.error(error)
-      res.status(400).send(error)
+      res.status(400).send({ status: 400, error })
     }
   })
 

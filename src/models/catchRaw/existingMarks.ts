@@ -1,5 +1,6 @@
 import db from '../../db'
 import { ExistingMarksI } from '../../interfaces'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -34,4 +35,48 @@ async function getProgramExistingMarks(
   }
 }
 
-export { postExistingMarks, getProgramExistingMarks }
+async function putExistingMark(
+  existingMarkId: string,
+  existingMarkObject: Record<string, any>
+): Promise<any> {
+  try {
+    const markData = { ...existingMarkObject.createdExistingMarkResponse }
+    delete markData.id
+    const expectedUpdatedAt = takeExpectedUpdatedAt(markData)
+    const updated = await versionedUpdate(
+      knex,
+      'existingMarks',
+      existingMarkId,
+      markData,
+      expectedUpdatedAt
+    )
+    return { createdExistingMarkResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+// DELETE existingMarks - a leaf table (nothing else references it), so a
+// plain delete with no cascade is safe.
+async function deleteExistingMark(existingMarkId: string): Promise<number> {
+  try {
+    const deleted = await knex<ExistingMarksI>('existingMarks')
+      .where('id', existingMarkId)
+      .del()
+
+    if (!deleted) {
+      throw new Error(`Mark recapture ${existingMarkId} not found`)
+    }
+
+    return deleted
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  postExistingMarks,
+  getProgramExistingMarks,
+  putExistingMark,
+  deleteExistingMark,
+}

@@ -35,8 +35,8 @@ export default (mainRouter: Router) => {
   const graphClient = Client.initWithMiddleware({ authProvider: authProvider })
 
   userRouter.get('/', async (req, res) => {
-    const test = await getAllGraphUsers()
     try {
+      const test = await getAllGraphUsers()
       res.status(200).send(test)
     } catch (error) {
       console.error(error)
@@ -45,18 +45,25 @@ export default (mainRouter: Router) => {
   })
 
   userRouter.get('/current', async (req, res) => {
-    const idToken = req.headers.idtoken
-    const accessToken = req.headers.accesstoken
-
-    const decodedToken = jwt.decode(idToken, { complete: true })
-    const userId = decodedToken.payload.sub
-
-    const user = await getCurrentUser(userId)
-
-    const userEmailIdentity = user.identities.find(
-      identity => identity.signInType === 'emailAddress'
-    )
     try {
+      const idToken = req.headers.idtoken
+      const accessToken = req.headers.accesstoken
+
+      const decodedToken = jwt.decode(idToken, { complete: true })
+      const userId = decodedToken.payload.sub
+
+      const user = await getCurrentUser(userId)
+
+      const userEmailIdentity = user.identities.find(
+        identity => identity.signInType === 'emailAddress'
+      )
+
+      if (!userEmailIdentity) {
+        return res
+          .status(400)
+          .send({ error: 'No email identity found for this user.' })
+      }
+
       res.status(200).send({
         displayName: user.displayName,
         firstName: user.givenName,

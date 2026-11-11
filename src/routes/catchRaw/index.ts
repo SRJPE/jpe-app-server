@@ -7,6 +7,8 @@ import {
   postCatchRaw,
   putCatchRaw,
 } from '../../models/catchRaw'
+import { isAuthorized } from '../../middleware/auth-middleware'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const catchRawRouter = Router({ mergeParams: true })
 
@@ -14,9 +16,9 @@ export default (mainRouter: Router) => {
   mainRouter.use('/catch-raw', catchRawRouter)
 
   catchRawRouter.get('/:catchRawId', async (req, res) => {
-    const { catchRawId } = req.params
-    const catchRawRecord = await getCatchRawRecord(catchRawId)
     try {
+      const { catchRawId } = req.params
+      const catchRawRecord = await getCatchRawRecord(catchRawId)
       res.status(200).send(catchRawRecord)
     } catch (error) {
       console.error(error)
@@ -35,21 +37,26 @@ export default (mainRouter: Router) => {
     }
   })
 
-  catchRawRouter.get('/program/:programId', async (req, res) => {
-    try {
-      const { programId } = req.params
-      const { limit } = req.query
-      const parsedLimit = limit ? Number(limit) : undefined
-      const catchRawRecords = await getProgramCatchRawRecords(
-        programId,
-        parsedLimit
-      )
-      res.status(200).send(catchRawRecords)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
+  catchRawRouter.get(
+    '/program/:programId',
+    isAuthorized(),
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const { limit, allTime } = req.query
+        const parsedLimit = limit ? Number(limit) : undefined
+        const catchRawRecords = await getProgramCatchRawRecords(
+          programId,
+          parsedLimit,
+          allTime === 'true'
+        )
+        res.status(200).send(catchRawRecords)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
     }
-  })
+  )
 
   catchRawRouter.post('/', async (req, res) => {
     try {
@@ -57,7 +64,27 @@ export default (mainRouter: Router) => {
       const catchRawValues = req.body
       const createdCatchRawRecord = await postCatchRaw(catchRawValues)
       res.status(200).send(createdCatchRawRecord)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        const messagesByConstraint = {
+          genetic_sampling_crew_unique:
+            'This crew member is already assigned to this genetic sample.',
+          mark_applied_crew_unique:
+            'This crew member is already assigned to this applied mark.',
+          catch_fish_condition_unique:
+            'This fish condition is already recorded for this catch.',
+          // Normally resolved inside createCatchRaw (models/catchRaw/index.ts)
+          // without ever reaching here - this is a defense-in-depth fallback
+          // in case that resolution path is ever skipped (e.g. no clientUid
+          // sent, or the lookup inside createCatchRaw doesn't find a match).
+          catch_raw_client_uid_unique: 'This catch record already exists.',
+        }
+        return res.status(409).send({
+          error:
+            messagesByConstraint[error.constraint] ||
+            'This record already exists.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }
@@ -70,6 +97,7 @@ export default (mainRouter: Router) => {
       const editedCatchRawRecord = await putCatchRaw(catchRawId, catchRawObject)
       res.status(200).send(editedCatchRawRecord)
     } catch (error) {
+      if (sendStaleWrite(res, error)) return
       console.error(error)
       res.status(400).send(error)
     }
@@ -79,7 +107,7 @@ export default (mainRouter: Router) => {
     try {
       const { catchRawId } = req.params
       const deletedCatchRawResponse = await deleteCatchRaw(catchRawId)
-      res.status(200).send(deletedCatchRawResponse)
+      res.status(200).json({ deleted: deletedCatchRawResponse })
     } catch (error) {
       console.error(error)
       res.status(400).send(error)

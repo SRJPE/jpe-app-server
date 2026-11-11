@@ -2,6 +2,7 @@ import db from '../../db'
 import { Release, ReleaseCrew, ReleaseMarks } from '../../interfaces'
 import { postReleaseMarks } from './releaseMarks'
 import { postReleaseCrew } from './releaseCrew'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -99,4 +100,89 @@ async function createRelease(releaseValues): Promise<{
   }
 }
 
-export { getRelease, postRelease }
+async function getProgramReleases(programId: number | string): Promise<any> {
+  try {
+    const releases = await knex<Release>('release')
+      .select(
+        'release.*',
+        'releaseSite.releaseSiteName',
+        'markType.definition as markTypeName',
+        'markColor.definition as markColorName',
+        'bodyPart.definition as markPositionName',
+        'releaseMarks.fishCount',
+        'releaseMarks.releaseSiteId as markReleaseSiteId',
+        'markReleaseSite.releaseSiteName as markReleaseSiteName'
+      )
+      .where('programId', programId)
+      .join('releaseSite', 'release.releaseSiteId', 'releaseSite.id')
+      .leftJoin('releaseMarks', 'release.id', 'releaseMarks.releaseId')
+      .leftJoin('markType', 'markType.id', 'releaseMarks.markType')
+      .leftJoin('markColor', 'markColor.id', 'releaseMarks.markColor')
+      .leftJoin('bodyPart', 'bodyPart.id', 'releaseMarks.markPosition')
+      .leftJoin(
+        'releaseSite as markReleaseSite',
+        'markReleaseSite.id',
+        'releaseMarks.releaseSiteId'
+      )
+    return releases
+  } catch (error) {
+    throw error
+  }
+}
+
+async function putRelease(
+  releaseId: string,
+  releaseObject: Record<string, any>
+): Promise<any> {
+  try {
+    const releaseData = { ...releaseObject.createdReleaseResponse }
+    delete releaseData.id
+    const expectedUpdatedAt = takeExpectedUpdatedAt(releaseData)
+    const updated = await versionedUpdate(
+      knex,
+      'release',
+      releaseId,
+      releaseData,
+      expectedUpdatedAt
+    )
+    return { createdReleaseResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+// DELETE release - cascades releaseCrew and releaseMarks (both NO ACTION
+// FKs, no CASCADE at the DB level). A recapture (existingMarks) may record
+// which release the fish's original mark came from — unlink rather than
+// delete so the recapture record survives.
+async function deleteRelease(releaseId: number | string): Promise<number> {
+  try {
+    return await knex.transaction(async trx => {
+      await trx<ReleaseCrew>('releaseCrew').where('releaseId', releaseId).del()
+      await trx<ReleaseMarks>('releaseMarks')
+        .where('releaseId', releaseId)
+        .del()
+      await trx('existingMarks')
+        .where('releaseId', releaseId)
+        .update({ releaseId: null })
+
+      const deleted = await trx<Release>('release').where('id', releaseId).del()
+
+      if (!deleted) {
+        throw new Error(`Release ${releaseId} not found`)
+      }
+
+      return deleted
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  getRelease,
+  postRelease,
+  getProgramReleases,
+  putRelease,
+  deleteRelease,
+}

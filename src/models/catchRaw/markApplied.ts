@@ -1,5 +1,6 @@
 import db from '../../db'
-import { MarkAppliedI } from '../../interfaces'
+import { MarkAppliedI, MarkAppliedCrewI, ExistingMarksI } from '../../interfaces'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
 
 const { knex } = db
 
@@ -17,4 +18,55 @@ async function postMarkApplied(
   }
 }
 
-export { postMarkApplied }
+async function putMarkApplied(
+  markAppliedId: string,
+  markAppliedObject: Record<string, any>
+): Promise<any> {
+  try {
+    const markData = { ...markAppliedObject.createdMarkAppliedResponse }
+    delete markData.id
+    const expectedUpdatedAt = takeExpectedUpdatedAt(markData)
+    const updated = await versionedUpdate(
+      knex,
+      'markApplied',
+      markAppliedId,
+      markData,
+      expectedUpdatedAt
+    )
+    return { createdMarkAppliedResponse: updated[0] }
+  } catch (error) {
+    throw error
+  }
+}
+
+// DELETE markApplied - cascades markAppliedCrew (NO ACTION FK, no CASCADE at
+// the DB level). A recapture elsewhere may reference this mark (fish marked
+// here, recaptured on a different visit) — unlink rather than delete so that
+// recapture record survives.
+async function deleteMarkApplied(markAppliedId: string): Promise<number> {
+  try {
+    return await knex.transaction(async trx => {
+      await trx<ExistingMarksI>('existingMarks')
+        .where('markAppliedId', markAppliedId)
+        .update({ markAppliedId: null })
+
+      await trx<MarkAppliedCrewI>('markAppliedCrew')
+        .where('markAppliedId', markAppliedId)
+        .del()
+
+      const deleted = await trx<MarkAppliedI>('markApplied')
+        .where('id', markAppliedId)
+        .del()
+
+      if (!deleted) {
+        throw new Error(`Mark applied ${markAppliedId} not found`)
+      }
+
+      return deleted
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
+export { postMarkApplied, putMarkApplied, deleteMarkApplied }

@@ -1,5 +1,19 @@
 import db from '../../db'
-import { TrapVisit, TrapVisitCrew } from '../../interfaces'
+import { takeExpectedUpdatedAt, versionedUpdate } from '../../utils/versionedUpdate'
+import {
+  TrapVisit,
+  TrapVisitCrew,
+  TrapVisitEnvironmental,
+  TrapCoordinates,
+  CatchRaw,
+  ExistingMarksI,
+  GeneticSamplingDataI,
+  GeneticSamplingCrewI,
+  MarkAppliedI,
+  MarkAppliedCrewI,
+  CatchFishConditionI,
+  CatchRawConditionalValues,
+} from '../../interfaces'
 import { camelCase, keyBy } from 'lodash'
 import { postTrapCoordinates } from './trapCoordinates'
 import { postTrapVisitEnvironmental } from './trapVisitEnvironmental'
@@ -43,16 +57,22 @@ async function getTrapVisit(trapVisitId: number | string): Promise<any> {
   }
 }
 
-async function getProgramTrapVisits(programId: number | string) {
+async function getProgramTrapVisits(
+  programId: number | string,
+  allTime?: boolean
+) {
   try {
-    // get current date, set year to previous year
-    const pastYear = new Date()
-    pastYear.setFullYear(pastYear.getFullYear() - 1)
-
-    const trapVisits = await knex<TrapVisit>('trapVisit')
+    let query = knex<TrapVisit>('trapVisit')
       .select('*')
       .where('programId', programId)
-      .andWhere('created_at', '>=', pastYear)
+
+    if (!allTime) {
+      const pastYear = new Date()
+      pastYear.setFullYear(pastYear.getFullYear() - 1)
+      query = query.andWhere('created_at', '>=', pastYear)
+    }
+
+    const trapVisits = await query
 
     const trapVisitIds = trapVisits.map(trapVisit => trapVisit.id)
 
@@ -81,15 +101,30 @@ async function getProgramTrapVisits(programId: number | string) {
       return acc
     }, {})
 
+    const environmentalByTrapVisitId = trapVisitEnvironmentalData.reduce(
+      (acc, row) => {
+        if (!acc[row.trapVisitId]) {
+          acc[row.trapVisitId] = []
+        }
+        acc[row.trapVisitId].push(row)
+        return acc
+      },
+      {}
+    )
+
+    const coordinatesByTrapVisitId = coordinatesData.reduce((acc, row) => {
+      if (!acc[row.trapVisitId]) {
+        acc[row.trapVisitId] = row
+      }
+      return acc
+    }, {})
+
     const payload = trapVisits.map(trapVisit => {
-      const trapVisitEnvironmental = trapVisitEnvironmentalData.filter(
-        row => row.trapVisitId === trapVisit.id
-      )
+      const trapVisitEnvironmental = environmentalByTrapVisitId[trapVisit.id] || []
 
       const personnelIds = personnelIdsByTrapVisitId[trapVisit.id] || null
 
-      const coordinates =
-        coordinatesData.find(row => row.trapVisitId === trapVisit.id) || null
+      const coordinates = coordinatesByTrapVisitId[trapVisit.id] || null
 
       return {
         createdTrapVisitResponse: trapVisit,
@@ -153,31 +188,29 @@ async function createTrapVisit(trapVisitValues): Promise<{
 
     const createdTrapVisit = createdTrapVisitResponse?.[0]
 
-    // insert trapCoordinates
-    const trapCoordinatesPayload = {
-      trapVisitId: createdTrapVisit.id,
-      trapLocationsId: trapVisitValues.trapLocationId,
-      ...trapCoordinates,
-    }
-    const createdTrapCoordinatesResponse = await postTrapCoordinates(
-      trapCoordinatesPayload
-    )
     // insert trapVisitEnvironmental
-    const trapVisitEnvironmentalPayload = trapVisitEnvironmental?.map(
-      measureObject => {
-        return {
-          trapVisitId: createdTrapVisit.id,
-          ...measureObject,
-        }
-      }
-    )
+    const trapVisitEnvironmentalPayload = []
+
+    trapVisitEnvironmental?.forEach(measureObject => {
+      if (measureObject.measureValueNumeric === undefined) return
+
+      trapVisitEnvironmentalPayload.push({
+        trapVisitId: createdTrapVisit.id,
+        ...measureObject,
+      })
+    })
+
     const createdTrapVisitEnvironmentalResponse =
-      await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
+      trapVisitEnvironmentalPayload.length
+        ? await postTrapVisitEnvironmental(trapVisitEnvironmentalPayload)
+        : null
 
     const visitCrewPromises = []
-    trapVisitCrew.forEach(async personnelId => {
+    trapVisitCrew.forEach(async crewMember => {
       const trapVisitCrewPayload = {
-        personnelId,
+        personnelId: crewMember.personnelId,
+        dataRecorder: crewMember.dataRecorder,
+        fieldCheck: crewMember.fieldCheck,
         trapVisitId: createdTrapVisit.id,
       }
       visitCrewPromises.push(
@@ -190,10 +223,80 @@ async function createTrapVisit(trapVisitValues): Promise<{
       return {
         createdTrapVisitResponse: createdTrapVisit,
         createdTrapVisitCrewResponse: crewIds,
-        createdTrapCoordinatesResponse,
+        // createdTrapCoordinatesResponse,
         createdTrapVisitEnvironmentalResponse,
       }
     })
+  } catch (error) {
+    throw error
+  }
+}
+
+// Used by the mobile app / dashboard's export-then-reimport recovery flow to
+// check, before creating anything, whether a trap visit already exists on
+// the server — so a re-import never blindly duplicates data. Mirrors the two
+// things the DB itself treats as "this trap visit already exists":
+// trap_visit_uid (UNIQUE NULL) and the partial unique index
+// unique_trap_visit(program_id, trap_location_id, trap_visit_time_start).
+// Keeping this definition here (not duplicated client-side) means it can
+// never drift from what those constraints actually enforce.
+async function findDuplicateTrapVisit({
+  programId,
+  trapLocationId,
+  trapVisitTimeStart,
+  trapVisitUid,
+}: {
+  programId: number | string
+  trapLocationId: number | string
+  trapVisitTimeStart?: string
+  trapVisitUid?: string
+}): Promise<{
+  match: {
+    id: number
+    trapVisitUid: string | null
+    trapVisitTimeStart: string | null
+    programId: number
+    trapLocationId: number
+    catchRawCount: number
+  } | null
+}> {
+  try {
+    let match: any
+
+    if (trapVisitUid) {
+      match = await knex<any>('trapVisit')
+        .select('*')
+        .where('trapVisitUid', trapVisitUid)
+        .first()
+    }
+
+    if (!match && trapLocationId && trapVisitTimeStart) {
+      match = await knex<any>('trapVisit')
+        .select('*')
+        .where('programId', programId)
+        .andWhere('trapLocationId', trapLocationId)
+        .andWhere('trapVisitTimeStart', trapVisitTimeStart)
+        .first()
+    }
+
+    if (!match) {
+      return { match: null }
+    }
+
+    const [{ count }] = await knex('catchRaw')
+      .where('trapVisitId', (match as any).id)
+      .count('id as count')
+
+    return {
+      match: {
+        id: (match as any).id,
+        trapVisitUid: (match as any).trapVisitUid ?? null,
+        trapVisitTimeStart: (match as any).trapVisitTimeStart ?? null,
+        programId: (match as any).programId,
+        trapLocationId: (match as any).trapLocationId,
+        catchRawCount: Number(count),
+      },
+    }
   } catch (error) {
     throw error
   }
@@ -220,6 +323,9 @@ function replaceNAWithNull(obj) {
 }
 
 // PUT trapVisit - admin only route
+// Main row (with the optional expectedUpdatedAt stale check), crew and
+// environmental measures are written in one transaction, so a stale or
+// failing save leaves the visit untouched.
 async function putTrapVisit(
   trapVisitId: string,
   trapVisitValues: Record<string, any>
@@ -227,58 +333,69 @@ async function putTrapVisit(
   const trapVisitValuesNoNull = replaceNAWithNull(trapVisitValues)
 
   try {
-    if (trapVisitValuesNoNull.hasOwnProperty('createdTrapVisitCrewResponse')) {
-      // delete all existing crew from trap visit
-      await knex<TrapVisit>('trapVisitCrew')
-        .where('trapVisitId', trapVisitId)
-        .del()
+    await knex.transaction(async trx => {
+      const mainRow = { ...(trapVisitValuesNoNull.createdTrapVisitResponse ?? {}) }
+      delete mainRow.id
+      const expectedUpdatedAt = takeExpectedUpdatedAt(mainRow)
+      // Always runs, even with no field changes: it performs the stale
+      // check and bumps updatedAt for crew/environmental-only edits.
+      await versionedUpdate(trx, 'trapVisit', trapVisitId, mainRow, expectedUpdatedAt)
 
-      // insert new crew
-      const rowsToInsert =
-        trapVisitValuesNoNull.createdTrapVisitCrewResponse.map(personnelId => {
-          return {
-            personnelId,
-            trapVisitId,
-          }
-        })
-      await knex<TrapVisit>('trapVisitCrew').insert(rowsToInsert, ['*'])
-      delete trapVisitValuesNoNull.createdTrapVisitCrewResponse
-    }
+      if (trapVisitValuesNoNull.hasOwnProperty('createdTrapVisitCrewResponse')) {
+        // delete all existing crew from trap visit
+        await trx<TrapVisit>('trapVisitCrew')
+          .where('trapVisitId', trapVisitId)
+          .del()
 
-    if (
-      trapVisitValuesNoNull.hasOwnProperty(
-        'createdTrapVisitEnvironmentalResponse'
-      )
-    ) {
-      const measureNames = Object.values(
-        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
-      ).map((measure: any) => measure.measureName)
-      // delete existing records for measures for trap visit
-      await knex<TrapVisit>('trapVisitEnvironmental')
-        .whereIn('measureName', measureNames)
-        .andWhere('trapVisitId', trapVisitId)
-        .del()
-
-      trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse.forEach(
-        measure => {
-          delete measure.id
+        // insert new crew
+        const rowsToInsert =
+          trapVisitValuesNoNull.createdTrapVisitCrewResponse.map(personnelId => {
+            return {
+              personnelId,
+              trapVisitId,
+            }
+          })
+        if (rowsToInsert.length) {
+          await trx<TrapVisit>('trapVisitCrew').insert(rowsToInsert, ['*'])
         }
-      )
+      }
 
-      const rowsToInsert =
-        trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
+      if (
+        trapVisitValuesNoNull.hasOwnProperty(
+          'createdTrapVisitEnvironmentalResponse'
+        )
+      ) {
+        const envItems: Array<any> =
+          trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
 
-      await knex<TrapVisit>('trapVisitEnvironmental').insert(rowsToInsert, [
-        '*',
-      ])
-      delete trapVisitValuesNoNull.createdTrapVisitEnvironmentalResponse
-    }
-
-    delete trapVisitValuesNoNull.createdTrapVisitResponse.id
-
-    await knex<TrapVisit>('trapVisit')
-      .where('id', trapVisitId)
-      .update(trapVisitValuesNoNull.createdTrapVisitResponse, ['*'])
+        for (const measure of envItems) {
+          const { id, measureName, measureValueNumeric, measureValueText } =
+            measure
+          if (id) {
+            await trx('trapVisitEnvironmental').where('id', id).update({
+              measureValueNumeric,
+              measureValueText,
+            })
+          } else {
+            const existing = await trx('trapVisitEnvironmental')
+              .where({ trapVisitId, measureName })
+              .first()
+            if (existing) {
+              await trx('trapVisitEnvironmental')
+                .where('id', existing.id)
+                .update({ measureValueNumeric, measureValueText })
+            } else {
+              await trx('trapVisitEnvironmental').insert({
+                trapVisitId,
+                measureName,
+                measureValueNumeric,
+                measureValueText,
+              })
+            }
+          }
+        }
+      }
+    })
 
     const updatedTrapVisit = await getTrapVisit(trapVisitId)
     return updatedTrapVisit
@@ -287,4 +404,114 @@ async function putTrapVisit(
   }
 }
 
-export { getTrapVisit, getProgramTrapVisits, postTrapVisit, putTrapVisit }
+// DELETE trapVisit - cascades to every record owned by this visit:
+// crew, environmental measures, coordinates, catch records, and everything
+// hanging off those catch records (recaptures, marks applied, genetics,
+// fish condition). Releases are NOT touched — they aren't owned by a trap
+// visit (no trapVisitId column on `release`).
+//
+// Most of these FKs already CASCADE at the DB level (see catch_raw ->
+// trap_visit, and existing_marks/genetic_sampling_data/mark_applied/
+// catch_fish_condition -> catch_raw), but a few child tables use NO ACTION
+// and would otherwise raise a FK violation, so we delete/unlink those
+// explicitly before removing their parents. Everything runs in one
+// transaction so a partial failure can't leave orphaned rows.
+async function deleteTrapVisit(trapVisitId: number | string): Promise<{
+  trapVisitId: number | string
+  deletedCatchRawCount: number
+}> {
+  try {
+    return await knex.transaction(async trx => {
+      const catchRawRows = await trx<CatchRaw>('catchRaw')
+        .select('id')
+        .where('trapVisitId', trapVisitId)
+      const catchRawIds = catchRawRows.map((r: any) => r.id)
+
+      if (catchRawIds.length) {
+        const markAppliedRows = await trx<MarkAppliedI>('markApplied')
+          .select('id')
+          .whereIn('catchRawId', catchRawIds)
+        const markAppliedIds = markAppliedRows.map(r => r.id)
+
+        const geneticSamplingRows = await trx<GeneticSamplingDataI>(
+          'geneticSamplingData'
+        )
+          .select('id')
+          .whereIn('catchRawId', catchRawIds)
+        const geneticSamplingDataIds = geneticSamplingRows.map(r => r.id)
+
+        if (geneticSamplingDataIds.length) {
+          await trx<GeneticSamplingCrewI>('geneticSamplingCrew')
+            .whereIn('geneticSamplingDataId', geneticSamplingDataIds)
+            .del()
+        }
+        await trx<GeneticSamplingDataI>('geneticSamplingData')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        if (markAppliedIds.length) {
+          // A recapture elsewhere in the system may reference the mark
+          // applied here (fish marked on this visit, recaptured on another).
+          // Unlink rather than delete so we don't destroy that other visit's
+          // recapture record.
+          await trx<ExistingMarksI>('existingMarks')
+            .whereIn('markAppliedId', markAppliedIds)
+            .update({ markAppliedId: null })
+
+          await trx<MarkAppliedCrewI>('markAppliedCrew')
+            .whereIn('markAppliedId', markAppliedIds)
+            .del()
+        }
+        await trx<MarkAppliedI>('markApplied')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        // This visit's own recapture records (a fish caught here that carried
+        // a mark from a prior release).
+        await trx<ExistingMarksI>('existingMarks')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        await trx<CatchFishConditionI>('catchFishCondition')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+
+        await trx<CatchRawConditionalValues>('catchRawConditionalValues')
+          .whereIn('catchRawId', catchRawIds)
+          .del()
+      }
+
+      await trx<CatchRaw>('catchRaw').where('trapVisitId', trapVisitId).del()
+      await trx<TrapVisitCrew>('trapVisitCrew')
+        .where('trapVisitId', trapVisitId)
+        .del()
+      await trx<TrapVisitEnvironmental>('trapVisitEnvironmental')
+        .where('trapVisitId', trapVisitId)
+        .del()
+      await trx<TrapCoordinates>('trapCoordinates')
+        .where('trapVisitId', trapVisitId)
+        .del()
+
+      const deleted = await trx<TrapVisit>('trapVisit')
+        .where('id', trapVisitId)
+        .del()
+
+      if (!deleted) {
+        throw new Error(`Trap visit ${trapVisitId} not found`)
+      }
+
+      return { trapVisitId, deletedCatchRawCount: catchRawIds.length }
+    })
+  } catch (error) {
+    throw error
+  }
+}
+
+export {
+  getTrapVisit,
+  getProgramTrapVisits,
+  postTrapVisit,
+  putTrapVisit,
+  deleteTrapVisit,
+  findDuplicateTrapVisit,
+}

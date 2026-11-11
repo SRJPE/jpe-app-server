@@ -1,5 +1,12 @@
 import { Router } from 'express'
-import { postRelease, getRelease } from '../../models/release'
+import {
+  postRelease,
+  getRelease,
+  getProgramReleases,
+  putRelease,
+  deleteRelease,
+} from '../../models/release'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const releaseRouter = Router({ mergeParams: true })
 
@@ -18,13 +25,54 @@ export default (mainRouter: Router) => {
     }
   })
 
+  releaseRouter.get('/program/:programId', async (req, res) => {
+    try {
+      const { programId } = req.params
+      const catchRawRecords = await getProgramReleases(programId)
+      res.status(200).send(catchRawRecords)
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // PUT /release/:releaseId
+  releaseRouter.put('/:releaseId', async (req, res) => {
+    try {
+      const { releaseId } = req.params
+      const updatedRelease = await putRelease(releaseId, req.body)
+      res.status(200).send(updatedRelease)
+    } catch (error) {
+      if (sendStaleWrite(res, error)) return
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
+  // DELETE /release/:releaseId
+  releaseRouter.delete('/:releaseId', async (req, res) => {
+    try {
+      const { releaseId } = req.params
+      const deleted = await deleteRelease(releaseId)
+      res.status(200).json({ deleted })
+    } catch (error) {
+      console.error(error)
+      res.status(400).send(error)
+    }
+  })
+
   // POST /release
   releaseRouter.post('/', async (req, res) => {
     try {
       const releaseValues = req.body
       const createdRelease = await postRelease(releaseValues)
       res.status(200).send(createdRelease)
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(409).send({
+          error: 'This crew member is already assigned to this release.',
+        })
+      }
       console.error(error)
       res.status(400).send(error)
     }

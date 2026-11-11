@@ -3,14 +3,24 @@ import { DropdownOption } from '../../interfaces'
 
 const { knex } = db
 
-// get length at date values
-async function getLengthAtDate(): Promise<Array<any>> {
+// get length at date river values
+async function getLengthAtDateRiver(): Promise<Array<any>> {
   try {
-    const lengthAtDate = await knex<any>('lengthAtDate').select('*')
-    return lengthAtDate
+    const lengthAtDateRiver = await knex<any>('lengthAtDateRiver').select('*')
+    return lengthAtDateRiver
   } catch (error) {
     throw error
   }
 }
 
-export { getLengthAtDate }
+// get length at date delta values
+async function getLengthAtDateDelta(): Promise<Array<any>> {
+  try {
+    const lengthAtDateDelta = await knex<any>('lengthAtDateDelta').select('*')
+    return lengthAtDateDelta
+  } catch (error) {
+    throw error
+  }
+}
+
+export { getLengthAtDateRiver, getLengthAtDateDelta }

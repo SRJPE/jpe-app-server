@@ -8,18 +8,25 @@ import {
   Program,
   TrapLocations,
 } from '../../interfaces'
-import { postFishMeasureProtocol } from '../fishMeasureProtocol'
+import {
+  postFishMeasureProtocol,
+  getFishMeasureProtocol,
+} from '../fishMeasureProtocol'
 import { postHatcheryInfo } from '../hatcheryInfo'
 import { postPermitInfo } from '../permitInfo'
 import { postPersonnel } from '../personnel'
 import { postTrapLocations } from '../trapLocations'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { postProgramPersonnelTeam } from '../programPersonnelTeam'
+import { getProgramFormFields } from './formFields'
+import { getOptionsByFormFieldIdsForPrograms } from './formFieldOptions'
 
 const { knex } = db
 
 // get programs associated with personnel
-async function getPersonnelPrograms(personnelId: string): Promise<any> {
+async function getPersonnelPrograms(
+  personnelId: string | number
+): Promise<any> {
   try {
     const programs = (await knex<any>('programPersonnelTeam')
       .join('program', 'program.id', 'programPersonnelTeam.programId')
@@ -34,11 +41,13 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
           programPersonnelTeamData,
           hatcheryInfoData,
           fishMeasureProtocolData,
+          formFieldsData,
         ] = await Promise.all([
           knex<any>('trapLocations')
             .where('programId', program.id)
-            .select('*')
-            .orderBy('id'),
+            .leftJoin('equipment', 'equipment.id', 'trapLocations.equipmentId')
+            .select('trapLocations.*', 'equipment.definition')
+            .orderBy('trapLocations.id'),
           knex<any>('programPersonnelTeam')
             .join(
               'personnel',
@@ -52,35 +61,53 @@ async function getPersonnelPrograms(personnelId: string): Promise<any> {
               'personnel.lastName',
               'personnel.email',
               'personnel.role',
-              'personnel.agencyId'
+              'personnel.agencyId',
+              'personnel.azureUid',
+              'personnel.phone'
             )
             .orderBy('id'),
           knex<any>('hatcheryInfo')
             .where('programId', program.id)
             .select('*')
             .orderBy('id'),
-          knex<any>('fishMeasureProtocol')
-            .where('programId', program.id)
-            .join('taxon', 'taxon.code', 'fishMeasureProtocol.species')
-            .join('lifeStage', 'lifeStage.id', 'fishMeasureProtocol.lifeStage')
-            .join('run', 'run.id', 'fishMeasureProtocol.run')
-            .select(
-              'taxon.commonname',
-              'lifeStage.definition as lifeStageName',
-              'run.definition as runName',
-              'fishMeasureProtocol.*'
-            )
-            .orderBy('id'),
+          getFishMeasureProtocol(program.id),
+          // Options are hoisted into one query below — this path runs on every
+          // authorized request via isAuthorized(), so a per-program option
+          // fetch here would multiply the hot path.
+          getProgramFormFields(program.id, { withOptions: false }),
         ])
 
         program['trappingSites'] = trapLocationsData
         program['crewMembers'] = programPersonnelTeamData
         program['hatcheryInfo'] = hatcheryInfoData
         program['fishMeasureProtocol'] = fishMeasureProtocolData
+        program['programFormFields'] = formFieldsData
       })
     )
+
+    // One whereIn across every program's fields, then fan the results back
+    // out PER PROGRAM — each program only ever sees its own scoped options
+    // plus the shared/global set, never another program's.
+    const optionsByProgramId = await getOptionsByFormFieldIdsForPrograms(
+      programs.flatMap((program: any) =>
+        (program.programFormFields ?? []).map((field: any) => field.formFieldId)
+      ),
+      programs.map((program: any) => program.id)
+    )
+
+    programs.forEach((program: any) => {
+      const optionsByFormFieldId = optionsByProgramId[String(program.id)] ?? {}
+      program.programFormFields = (program.programFormFields ?? []).map(
+        (field: any) => ({
+          ...field,
+          options: optionsByFormFieldId[field.formFieldId] ?? [],
+        })
+      )
+    })
+
     return programs
   } catch (error) {
+    console.log('errr', error)
     throw error
   }
 }

@@ -8,13 +8,20 @@ async function getFishMeasureProtocol(
   programId
 ): Promise<FishMeasureProtocol[]> {
   try {
-    const createdFishMeasureProtocol = await knex<FishMeasureProtocol>(
-      'fishMeasureProtocol'
-    )
-      .select('*')
+    const fishMeasureProtocolResults = await knex<any>('fishMeasureProtocol')
       .where('programId', programId)
+      .join('taxon', 'taxon.code', 'fishMeasureProtocol.species')
+      .leftJoin('lifeStage', 'lifeStage.id', 'fishMeasureProtocol.lifeStage')
+      .leftJoin('run', 'run.id', 'fishMeasureProtocol.run')
+      .select(
+        'taxon.commonname',
+        'lifeStage.definition as lifeStageName',
+        'run.definition as runName',
+        'fishMeasureProtocol.*'
+      )
+      .orderBy('id')
 
-    return createdFishMeasureProtocol
+    return fishMeasureProtocolResults
   } catch (error) {
     throw error
   }
@@ -51,8 +58,20 @@ async function updateFishMeasureProtocol({
   }
 }
 
+async function deleteFishMeasureProtocol(id): Promise<number> {
+  try {
+    const deletedCount = await knex<FishMeasureProtocol>('fishMeasureProtocol')
+      .where('id', id)
+      .del()
+    return deletedCount
+  } catch (error) {
+    throw error
+  }
+}
+
 export {
   getFishMeasureProtocol,
   postFishMeasureProtocol,
   updateFishMeasureProtocol,
+  deleteFishMeasureProtocol,
 }

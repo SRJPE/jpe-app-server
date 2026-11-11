@@ -6,6 +6,14 @@ export interface DropdownOption {
   updatedAt: Date
 }
 
+export interface CodeDropdownOption {
+  id: number
+  code: string
+  description?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface TrapVisit {
   id: number
   projectId?: number
@@ -27,6 +35,8 @@ export interface TrapVisit {
   updatedAt?: Date
   qcCompleted?: boolean
   qcCompletedAt?: Date
+  qcCompletedBy?: number
+  qcComments?: string
   comments?: string
   crew?: Array<any>
   environmental?: Record<string, any>
@@ -84,6 +94,9 @@ export interface ExistingMarksI {
   markCode: string
   createdAt: Date
   updatedAt: Date
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 export interface GeneticSamplingDataI {
   id: number
@@ -110,6 +123,9 @@ export interface MarkAppliedI {
   comments?: string
   createdAt: Date
   updatedAt: Date
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 export interface MarkAppliedCrewI {
   id: number
@@ -140,6 +156,9 @@ export interface Release {
   totalWildFishDead?: number
   totalHatcheryFishDead?: number
   crew?: Array<any>
+  qcCompleted?: boolean
+  qcTime?: Date
+  qcCompletedBy?: number
 }
 
 export interface ReleaseMarks {
@@ -148,6 +167,10 @@ export interface ReleaseMarks {
   markType: number
   markColor: number
   markPosition: number
+  // Optional per-mark overrides for multi-location release trials.
+  // Null on traditional single-location releases.
+  fishCount?: number
+  releaseSiteId?: number
 }
 export interface ReleaseCrew {
   id: number
@@ -173,6 +196,8 @@ export interface TrapLocations {
   dataRecorderId?: number
   dataRecorderAgencyId?: number
   siteName?: string
+  project?: string
+  equipmentId?: number
   coneSizeFt?: number
   xCoord?: number
   yCoord?: number
@@ -199,6 +224,15 @@ export interface TrapCoordinates {
 export interface TrapVisitEnvironmental {
   id: number
   trapVisitId: number
+  measureName: string
+  measureValueNumeric: number
+  measureValueText: string
+  measureUnit: number
+}
+
+export interface CatchRawConditionalValues {
+  id: number
+  catchRawId: number
   measureName: string
   measureValueNumeric: number
   measureValueText: string
