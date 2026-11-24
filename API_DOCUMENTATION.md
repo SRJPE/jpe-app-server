@@ -9,6 +9,25 @@ This documentation outlines the requests, payloads, and responses currently avai
 3.  **[Personnel Requests](#personnel-requests)**
 4.  **[Program Requests](#program-requests)**
   
+## Stale-write protection on PUT
+
+`PUT trap-visit/:id`, `PUT catch-raw/:id`, `PUT release/:id`,
+`PUT existing-marks/:id` and `PUT mark-applied/:id` accept an optional
+`expectedUpdatedAt` inside the record section of the body
+(`createdTrapVisitResponse`, `createdCatchRawResponse`,
+`createdReleaseResponse`, `createdExistingMarkResponse`,
+`createdMarkAppliedResponse`). Send the `updatedAt` value you loaded.
+
+- If the row's `updatedAt` still matches (to the millisecond), the update is
+  applied and `updatedAt` is set to now; the response contains the new value.
+- If someone else saved the row in between, nothing is written and the API
+  answers `409 { "error": "stale", "message": "...", "current": { ...row } }`.
+- Omit `expectedUpdatedAt` to skip the check (existing clients keep working).
+  `updatedAt` is bumped on every update either way.
+
+`PUT genetic-sampling/:id` has no check (genetics rows don't expose
+`updatedAt`).
+
 ## Trap Visit Requests
 
 #### Creating a trap visit

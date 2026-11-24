@@ -20,7 +20,11 @@ import {
 } from '../../models/trapVisit'
 import { getVisitSetupDefaultValues } from '../../services/trapVisit'
 import { putTrapVisitWaterTurbidity } from '../../models/trapVisit/trapVisitEnvironmental'
-import { isAuthorized } from '../../middleware/auth-middleware'
+import {
+  isAuthorized,
+  requireProgramMatch,
+} from '../../middleware/auth-middleware'
+import { sendStaleWrite } from '../../utils/versionedUpdate'
 
 const trapVisitRouter = Router({ mergeParams: true })
 
@@ -106,16 +110,21 @@ export default (mainRouter: Router) => {
     }
   })
 
-  trapVisitRouter.get('/:trapVisitId', async (req, res) => {
-    try {
-      const { trapVisitId } = req.params
-      const trapVisit = await getTrapVisit(trapVisitId)
-      res.status(200).send(trapVisit)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  trapVisitRouter.get(
+    '/:trapVisitId',
+    isAuthorized(),
+    requireProgramMatch('trapVisit', 'trapVisitId'),
+    async (req, res) => {
+      try {
+        const { trapVisitId } = req.params
+        const trapVisit = await getTrapVisit(trapVisitId)
+        res.status(200).send(trapVisit)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
   trapVisitRouter.get(
     '/program/:programId',
@@ -126,50 +135,61 @@ export default (mainRouter: Router) => {
         const { allTime } = req.query
         const trapVisits = await getProgramTrapVisits(
           programId,
-          allTime === 'true'
+          allTime === 'true',
         )
         res.status(200).send(trapVisits)
       } catch (error) {
         console.error(error)
         res.status(400).send(error)
       }
-    }
+    },
   )
 
-  trapVisitRouter.put('/:trapVisitId', async (req, res) => {
-    try {
-      const { trapVisitId } = req.params
-      const trapVisitValues = req.body
-      const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
-      res.status(200).send(editedTrapVisit)
-    } catch (error: any) {
-      if (error.code === '23505') {
-        return res.status(409).send({
-          error: 'This crew member is already assigned to this trap visit.',
-        })
+  trapVisitRouter.put(
+    '/:trapVisitId',
+    isAuthorized(),
+    requireProgramMatch('trapVisit', 'trapVisitId'),
+    async (req, res) => {
+      try {
+        const { trapVisitId } = req.params
+        const trapVisitValues = req.body
+        const editedTrapVisit = await putTrapVisit(trapVisitId, trapVisitValues)
+        res.status(200).send(editedTrapVisit)
+      } catch (error: any) {
+        if (sendStaleWrite(res, error)) return
+        if (error.code === '23505') {
+          return res.status(409).send({
+            error: 'This crew member is already assigned to this trap visit.',
+          })
+        }
+        if (error.code === '23514') {
+          return res.status(400).send({
+            error:
+              CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
+              'This trap visit violates a data rule.',
+          })
+        }
+        console.error(error)
+        res.status(400).send(error)
       }
-      if (error.code === '23514') {
-        return res.status(400).send({
-          error:
-            CHECK_CONSTRAINT_MESSAGES[error.constraint] ??
-            'This trap visit violates a data rule.',
-        })
-      }
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+    },
+  )
 
-  trapVisitRouter.delete('/:trapVisitId', async (req, res) => {
-    try {
-      const { trapVisitId } = req.params
-      const deletedTrapVisitResponse = await deleteTrapVisit(trapVisitId)
-      res.status(200).json({ deleted: deletedTrapVisitResponse })
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  trapVisitRouter.delete(
+    '/:trapVisitId',
+    isAuthorized(),
+    requireProgramMatch('trapVisit', 'trapVisitId'),
+    async (req, res) => {
+      try {
+        const { trapVisitId } = req.params
+        const deletedTrapVisitResponse = await deleteTrapVisit(trapVisitId)
+        res.status(200).json({ deleted: deletedTrapVisitResponse })
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
   trapVisitRouter.get(
     '/visit-setup/default/:personnelId',
@@ -184,37 +204,44 @@ export default (mainRouter: Router) => {
         console.error(error)
         res.status(400).send(error)
       }
-    }
+    },
   )
 
-  trapVisitRouter.put('/:trapVisitId/environmental', async (req, res) => {
-    try {
-      const { trapVisitId } = req.params
-      const { waterTurbidity } = req.body
+  trapVisitRouter.put(
+    '/:trapVisitId/environmental',
+    isAuthorized(),
+    requireProgramMatch('trapVisit', 'trapVisitId'),
+    async (req, res) => {
+      try {
+        const { trapVisitId } = req.params
+        const { waterTurbidity } = req.body
 
-      const trapVisitEnvironmentalResponse = await putTrapVisitWaterTurbidity({
-        trapVisitId,
-        waterTurbidity,
-      })
+        const trapVisitEnvironmentalResponse = await putTrapVisitWaterTurbidity(
+          {
+            trapVisitId,
+            waterTurbidity,
+          },
+        )
 
-      if (trapVisitEnvironmentalResponse) {
-        res.status(200).send({
-          status: 200,
-          trapVisitId,
-          waterTurbidity,
-        })
-      } else {
-        res.status(400).send({
-          status: 400,
-          trapVisitId,
-          waterTurbidity,
-        })
+        if (trapVisitEnvironmentalResponse) {
+          res.status(200).send({
+            status: 200,
+            trapVisitId,
+            waterTurbidity,
+          })
+        } else {
+          res.status(400).send({
+            status: 400,
+            trapVisitId,
+            waterTurbidity,
+          })
+        }
+      } catch (error) {
+        console.error(error)
+        res.status(400).send({ status: 400, error })
       }
-    } catch (error) {
-      console.error(error)
-      res.status(400).send({ status: 400, error })
-    }
-  })
+    },
+  )
 
   trapFunctionalityRouter(trapVisitRouter)
   fishProcessedRouter(trapVisitRouter)
