@@ -12,6 +12,7 @@ import {
   createNewUser,
 } from '../../services/microsoftGraph'
 import * as jwt from 'jsonwebtoken'
+import { isAuthorized, requireLead } from '../../middleware/auth-middleware'
 
 const userRouter = Router({ mergeParams: true })
 
@@ -22,7 +23,7 @@ export default (mainRouter: Router) => {
   const credential = new DeviceCodeCredential({
     tenantId: process.env.TENANT_ID,
     clientId: process.env.CLIENT_ID,
-    userPromptCallback: info => {
+    userPromptCallback: (info) => {
       console.log(info.message)
     },
   })
@@ -34,7 +35,9 @@ export default (mainRouter: Router) => {
 
   const graphClient = Client.initWithMiddleware({ authProvider: authProvider })
 
-  userRouter.get('/', async (req, res) => {
+  // Lists every B2C user in the tenant — leads-only, matching the mobile
+  // app's existing (client-side-only) "Add New User" lead gate.
+  userRouter.get('/', requireLead(), async (req, res) => {
     try {
       const test = await getAllGraphUsers()
       res.status(200).send(test)
@@ -55,7 +58,7 @@ export default (mainRouter: Router) => {
       const user = await getCurrentUser(userId)
 
       const userEmailIdentity = user.identities.find(
-        identity => identity.signInType === 'emailAddress'
+        (identity) => identity.signInType === 'emailAddress',
       )
 
       if (!userEmailIdentity) {
@@ -77,7 +80,8 @@ export default (mainRouter: Router) => {
     }
   })
 
-  userRouter.patch('/:azureUid/edit', async (req, res) => {
+  // Self-service only — isAuthorized() 403s unless :azureUid is the caller's own.
+  userRouter.patch('/:azureUid/edit', isAuthorized(), async (req, res) => {
     const userId = req.params.azureUid
 
     try {
@@ -89,7 +93,8 @@ export default (mainRouter: Router) => {
       res.status(400).send(error)
     }
   })
-  userRouter.post('/:azureUid/logout', async (req, res) => {
+  // Self-service only — isAuthorized() 403s unless :azureUid is the caller's own.
+  userRouter.post('/:azureUid/logout', isAuthorized(), async (req, res) => {
     const userId = req.params.azureUid
 
     try {
@@ -103,7 +108,9 @@ export default (mainRouter: Router) => {
     }
   })
 
-  userRouter.post('/create', async (req, res) => {
+  // Leads-only — matches the mobile app's existing (client-side-only)
+  // "Add New User" lead gate (Profile.tsx), now actually enforced server-side.
+  userRouter.post('/create', requireLead(), async (req, res) => {
     const requestBody = req.body
 
     try {
@@ -116,25 +123,30 @@ export default (mainRouter: Router) => {
     }
   })
 
-  userRouter.post('/:azureUid/change-password', async (req, res) => {
-    const userId = req.params.azureUid
-    const credentialsObj = req.body
+  // Self-service only — isAuthorized() 403s unless :azureUid is the caller's own.
+  userRouter.post(
+    '/:azureUid/change-password',
+    isAuthorized(),
+    async (req, res) => {
+      const userId = req.params.azureUid
+      const credentialsObj = req.body
 
-    try {
-      const changeUserPasswordRes = await changeUserPassword(
-        userId,
-        credentialsObj
-      )
-      console.log(
-        '🚀 ~ userRouter.post ~ changeUserPasswordRes:',
-        changeUserPasswordRes
-      )
+      try {
+        const changeUserPasswordRes = await changeUserPassword(
+          userId,
+          credentialsObj,
+        )
+        console.log(
+          '🚀 ~ userRouter.post ~ changeUserPasswordRes:',
+          changeUserPasswordRes,
+        )
 
-      res.status(200).send(changeUserPasswordRes)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+        res.status(200).send(changeUserPasswordRes)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
   // GET /user/
 }
