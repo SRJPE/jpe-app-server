@@ -131,6 +131,44 @@ export function requireLead() {
   }
 }
 
+// Allows a caller to view either their own data (:idParam matches their own
+// personnel.id) or, if they're a lead, someone else's. Covers the
+// program-creation flow, where a lead looks up the *newly-assigned* lead's
+// existing programs — which may not be the caller themselves — alongside the
+// ordinary case of a user fetching their own program list after sign-in.
+export function requireSelfOrLead(idParam: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { azureUid } = res.locals
+      const tokenPersonnel =
+        res.locals.tokenPersonnel ?? (await getPersonnelByAzureUid(azureUid))
+
+      if (!tokenPersonnel) {
+        return res
+          .status(403)
+          .send({ message: 'Unable to verify permission for this action.' })
+      }
+
+      const isSelf = tokenPersonnel.id === Number(req.params[idParam])
+      const isLead = tokenPersonnel.role === 'lead'
+
+      if (!isSelf && !isLead) {
+        return res.status(403).send({
+          message: 'Access to the requested resource is forbidden.',
+        })
+      }
+
+      res.locals = { ...res.locals, tokenPersonnel }
+      return next()
+    } catch (e) {
+      console.error(e)
+      return res
+        .status(403)
+        .send({ message: 'Unable to verify permission for this action.' })
+    }
+  }
+}
+
 // Per-record program-ownership check for the by-id GET/PUT/DELETE routes
 // that `isAuthorized()` can't cover (no :programId in the URL to compare —
 // just the record's own id). Looks up the row's programId (directly, or via
