@@ -29,6 +29,7 @@ vi.mock('../db', () => ({
 import {
   isAuthorized,
   requireLead,
+  requireSelfOrLead,
   requireProgramMatch,
 } from './auth-middleware'
 
@@ -149,6 +150,50 @@ describe('requireLead', () => {
     await requireLead()(req, res, next)
     expect(mockGetPersonnelByAzureUid).not.toHaveBeenCalled()
     expect(next).toHaveBeenCalledOnce()
+  })
+})
+
+describe('requireSelfOrLead', () => {
+  it('allows a caller viewing their own id (non-lead)', async () => {
+    mockGetPersonnelByAzureUid.mockResolvedValue({ id: 7, role: 'non-lead' })
+    const { req, res, next } = makeReqResNext(
+      { id: '7' },
+      { azureUid: 'uid-7' },
+    )
+    await requireSelfOrLead('id')(req, res, next)
+    expect(next).toHaveBeenCalledOnce()
+  })
+
+  it("allows a lead viewing someone else's id", async () => {
+    mockGetPersonnelByAzureUid.mockResolvedValue({ id: 1, role: 'lead' })
+    const { req, res, next } = makeReqResNext(
+      { id: '999' },
+      { azureUid: 'uid-lead' },
+    )
+    await requireSelfOrLead('id')(req, res, next)
+    expect(next).toHaveBeenCalledOnce()
+  })
+
+  it("rejects a non-lead viewing someone else's id", async () => {
+    mockGetPersonnelByAzureUid.mockResolvedValue({ id: 7, role: 'non-lead' })
+    const { req, res, next } = makeReqResNext(
+      { id: '999' },
+      { azureUid: 'uid-7' },
+    )
+    await requireSelfOrLead('id')(req, res, next)
+    expect(next).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(403)
+  })
+
+  it('rejects when there is no personnel record for this azureUid', async () => {
+    mockGetPersonnelByAzureUid.mockResolvedValue(undefined)
+    const { req, res, next } = makeReqResNext(
+      { id: '7' },
+      { azureUid: 'uid-unknown' },
+    )
+    await requireSelfOrLead('id')(req, res, next)
+    expect(next).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(403)
   })
 })
 
