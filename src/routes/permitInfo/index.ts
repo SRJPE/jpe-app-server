@@ -4,6 +4,10 @@ import {
   getProgramPermits,
   postPermitInfo,
 } from '../../models/permitInfo'
+import {
+  isAuthorized,
+  requireProgramMatch,
+} from '../../middleware/auth-middleware'
 
 const permitInfoRouter = Router({ mergeParams: true })
 
@@ -11,7 +15,7 @@ export default (mainRouter: Router) => {
   mainRouter.use('/permit-info', permitInfoRouter)
 
   // GET PROGRAM'S PERMITS
-  permitInfoRouter.get('/:programId', async (req, res) => {
+  permitInfoRouter.get('/:programId', isAuthorized(), async (req, res) => {
     try {
       const { programId } = req.params
       const programPermits = await getProgramPermits(programId)
@@ -35,17 +39,22 @@ export default (mainRouter: Router) => {
   })
 
   // PUT
-  permitInfoRouter.put('/:id', async (req, res) => {
-    try {
-      const { id } = req.params
-      const permitInfoValues = req.body
-      const updatedPermitInfo = await updatePermitInfo({
-        id,
-        permitInfoValues,
-      })
-      res.status(200).send(updatedPermitInfo)
-    } catch (error) {
-      res.status(400).send(error)
-    }
-  })
+  permitInfoRouter.put(
+    '/:id',
+    isAuthorized(),
+    requireProgramMatch('permitInfo', 'id'),
+    async (req, res) => {
+      try {
+        const { id } = req.params
+        const permitInfoValues = req.body
+        const updatedPermitInfo = await updatePermitInfo({
+          id,
+          permitInfoValues,
+        })
+        res.status(200).send(updatedPermitInfo)
+      } catch (error) {
+        res.status(400).send(error)
+      }
+    },
+  )
 }

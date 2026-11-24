@@ -4,6 +4,10 @@ import {
   postTrapLocations,
   updateTrapLocation,
 } from '../../models/trapLocations'
+import {
+  isAuthorized,
+  requireProgramMatch,
+} from '../../middleware/auth-middleware'
 
 const trapLocationsRouter = Router({ mergeParams: true })
 
@@ -11,7 +15,7 @@ export default (mainRouter: Router) => {
   mainRouter.use('/trap-locations', trapLocationsRouter)
 
   // GET PROGRAM'S TRAP LOCATIONS
-  trapLocationsRouter.get('/:programId', async (req, res) => {
+  trapLocationsRouter.get('/:programId', isAuthorized(), async (req, res) => {
     try {
       const { programId } = req.params
       const programTrapLocations = await getProgramTrapLocations(programId)
@@ -35,18 +39,23 @@ export default (mainRouter: Router) => {
   })
 
   // PUT
-  trapLocationsRouter.put('/:trapLocationId', async (req, res) => {
-    try {
-      const { trapLocationId } = req.params
-      const trapLocationValues = req.body
-      const updatedTrapLocation = await updateTrapLocation(
-        trapLocationId,
-        trapLocationValues
-      )
-      res.status(200).send(updatedTrapLocation)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  trapLocationsRouter.put(
+    '/:trapLocationId',
+    isAuthorized(),
+    requireProgramMatch('trapLocations', 'trapLocationId'),
+    async (req, res) => {
+      try {
+        const { trapLocationId } = req.params
+        const trapLocationValues = req.body
+        const updatedTrapLocation = await updateTrapLocation(
+          trapLocationId,
+          trapLocationValues,
+        )
+        res.status(200).send(updatedTrapLocation)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 }

@@ -7,6 +7,10 @@ import {
   deleteRelease,
 } from '../../models/release'
 import { sendStaleWrite } from '../../utils/versionedUpdate'
+import {
+  isAuthorized,
+  requireProgramMatch,
+} from '../../middleware/auth-middleware'
 
 const releaseRouter = Router({ mergeParams: true })
 
@@ -14,18 +18,23 @@ export default (mainRouter: Router) => {
   mainRouter.use('/release', releaseRouter)
 
   // GET /release/:releaseId
-  releaseRouter.get('/:releaseId', async (req, res) => {
-    try {
-      const { releaseId } = req.params
-      const release = await getRelease(releaseId)
-      res.status(200).send(release)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  releaseRouter.get(
+    '/:releaseId',
+    isAuthorized(),
+    requireProgramMatch('release', 'releaseId'),
+    async (req, res) => {
+      try {
+        const { releaseId } = req.params
+        const release = await getRelease(releaseId)
+        res.status(200).send(release)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
-  releaseRouter.get('/program/:programId', async (req, res) => {
+  releaseRouter.get('/program/:programId', isAuthorized(), async (req, res) => {
     try {
       const { programId } = req.params
       const catchRawRecords = await getProgramReleases(programId)
@@ -37,29 +46,39 @@ export default (mainRouter: Router) => {
   })
 
   // PUT /release/:releaseId
-  releaseRouter.put('/:releaseId', async (req, res) => {
-    try {
-      const { releaseId } = req.params
-      const updatedRelease = await putRelease(releaseId, req.body)
-      res.status(200).send(updatedRelease)
-    } catch (error) {
-      if (sendStaleWrite(res, error)) return
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  releaseRouter.put(
+    '/:releaseId',
+    isAuthorized(),
+    requireProgramMatch('release', 'releaseId'),
+    async (req, res) => {
+      try {
+        const { releaseId } = req.params
+        const updatedRelease = await putRelease(releaseId, req.body)
+        res.status(200).send(updatedRelease)
+      } catch (error) {
+        if (sendStaleWrite(res, error)) return
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
   // DELETE /release/:releaseId
-  releaseRouter.delete('/:releaseId', async (req, res) => {
-    try {
-      const { releaseId } = req.params
-      const deleted = await deleteRelease(releaseId)
-      res.status(200).json({ deleted })
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  releaseRouter.delete(
+    '/:releaseId',
+    isAuthorized(),
+    requireProgramMatch('release', 'releaseId'),
+    async (req, res) => {
+      try {
+        const { releaseId } = req.params
+        const deleted = await deleteRelease(releaseId)
+        res.status(200).json({ deleted })
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
   // POST /release
   releaseRouter.post('/', async (req, res) => {
