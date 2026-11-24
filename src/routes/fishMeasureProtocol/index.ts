@@ -5,6 +5,10 @@ import {
   updateFishMeasureProtocol,
   deleteFishMeasureProtocol,
 } from '../../models/fishMeasureProtocol'
+import {
+  isAuthorized,
+  requireProgramMatch,
+} from '../../middleware/auth-middleware'
 
 const fishMeasureProtocolRouter = Router({ mergeParams: true })
 
@@ -12,23 +16,27 @@ export default (mainRouter: Router) => {
   mainRouter.use('/fish-measure-protocol', fishMeasureProtocolRouter)
 
   // POST
-  fishMeasureProtocolRouter.get('/:programId', async (req, res) => {
-    try {
-      const { programId } = req.params
-      const fishMeasureProtocol = await getFishMeasureProtocol(programId)
-      res.status(200).send(fishMeasureProtocol)
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+  fishMeasureProtocolRouter.get(
+    '/:programId',
+    isAuthorized(),
+    async (req, res) => {
+      try {
+        const { programId } = req.params
+        const fishMeasureProtocol = await getFishMeasureProtocol(programId)
+        res.status(200).send(fishMeasureProtocol)
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
+      }
+    },
+  )
 
   // POST
   fishMeasureProtocolRouter.post('/', async (req, res) => {
     try {
       const fishMeasureProtocolValues = req.body
       const createdFishMeasureProtocol = await postFishMeasureProtocol(
-        fishMeasureProtocolValues
+        fishMeasureProtocolValues,
       )
       res.status(200).send(createdFishMeasureProtocol)
     } catch (error: any) {
@@ -44,41 +52,51 @@ export default (mainRouter: Router) => {
   })
 
   // PUT
-  fishMeasureProtocolRouter.put('/:id', async (req, res) => {
-    try {
-      const { id } = req.params
-      const fishMeasureProtocolValues = req.body
-      const updatedFishMeasureProtocol = await updateFishMeasureProtocol({
-        id,
-        fishMeasureProtocolValues,
-      })
-      res.status(200).send(updatedFishMeasureProtocol)
-    } catch (error: any) {
-      if (error.code === '23505') {
-        return res.status(409).send({
-          error:
-            'A fish measure protocol with this species, life stage, and run already exists for this program.',
+  fishMeasureProtocolRouter.put(
+    '/:id',
+    isAuthorized(),
+    requireProgramMatch('fishMeasureProtocol', 'id'),
+    async (req, res) => {
+      try {
+        const { id } = req.params
+        const fishMeasureProtocolValues = req.body
+        const updatedFishMeasureProtocol = await updateFishMeasureProtocol({
+          id,
+          fishMeasureProtocolValues,
         })
+        res.status(200).send(updatedFishMeasureProtocol)
+      } catch (error: any) {
+        if (error.code === '23505') {
+          return res.status(409).send({
+            error:
+              'A fish measure protocol with this species, life stage, and run already exists for this program.',
+          })
+        }
+        console.error(error)
+        res.status(400).send(error)
       }
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+    },
+  )
 
   // DELETE
-  fishMeasureProtocolRouter.delete('/:id', async (req, res) => {
-    try {
-      const { id } = req.params
-      const deletedCount = await deleteFishMeasureProtocol(id)
-      if (deletedCount > 0) {
-        return res.status(200).send({ success: true, deletedCount })
+  fishMeasureProtocolRouter.delete(
+    '/:id',
+    isAuthorized(),
+    requireProgramMatch('fishMeasureProtocol', 'id'),
+    async (req, res) => {
+      try {
+        const { id } = req.params
+        const deletedCount = await deleteFishMeasureProtocol(id)
+        if (deletedCount > 0) {
+          return res.status(200).send({ success: true, deletedCount })
+        }
+        return res
+          .status(404)
+          .send({ error: 'Fish measure protocol not found.' })
+      } catch (error) {
+        console.error(error)
+        res.status(400).send(error)
       }
-      return res
-        .status(404)
-        .send({ error: 'Fish measure protocol not found.' })
-    } catch (error) {
-      console.error(error)
-      res.status(400).send(error)
-    }
-  })
+    },
+  )
 }

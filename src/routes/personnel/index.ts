@@ -9,7 +9,7 @@ import {
   removePersonnelFromProgramTeam,
   updatePersonnelById,
 } from '../../models/personnel'
-import { isAuthorized } from '../../middleware/auth-middleware'
+import { isAuthorized, requireLead } from '../../middleware/auth-middleware'
 
 const personnelRouter = Router({ mergeParams: true })
 
@@ -51,8 +51,8 @@ export default (mainRouter: Router) => {
     }
   })
 
-  // POST
-  personnelRouter.post('/', async (req, res) => {
+  // POST — leads-only (creates+attaches a new crew member to their team).
+  personnelRouter.post('/', requireLead(), async (req, res) => {
     try {
       const personnelValues = req.body
       const createdPersonnel = await postPersonnel(personnelValues)
@@ -60,7 +60,7 @@ export default (mainRouter: Router) => {
     } catch (error: any) {
       if (error.code === '23505') {
         return res.status(409).send({
-          error: 'This personnel is already on this program\'s team.',
+          error: "This personnel is already on this program's team.",
         })
       }
       console.error(error)
@@ -68,8 +68,8 @@ export default (mainRouter: Router) => {
     }
   })
 
-  // POST
-  personnelRouter.post('/team', async (req, res) => {
+  // POST — leads-only (adds an existing personnel record to a program's team).
+  personnelRouter.post('/team', requireLead(), async (req, res) => {
     try {
       const personnelValues = req.body
       const createdPersonnel = await addPersonnelToProgramTeam({
@@ -80,7 +80,7 @@ export default (mainRouter: Router) => {
     } catch (error: any) {
       if (error.code === '23505') {
         return res.status(409).send({
-          error: 'This personnel is already on this program\'s team.',
+          error: "This personnel is already on this program's team.",
         })
       }
       console.error(error)
@@ -88,11 +88,10 @@ export default (mainRouter: Router) => {
     }
   })
 
-  // DELETE
-  personnelRouter.delete('/team', async (req, res) => {
+  // DELETE — leads-only (removes a personnel record from a program's team).
+  personnelRouter.delete('/team', requireLead(), async (req, res) => {
     try {
       const personnelValues = req.body
-      console.log(req.body)
       const deletedPersonnelCount = await removePersonnelFromProgramTeam({
         programId: personnelValues.programId,
         personnelId: personnelValues.personnelId,
@@ -113,7 +112,9 @@ export default (mainRouter: Router) => {
     }
   })
 
-  personnelRouter.put('/:azureUid', async (req, res) => {
+  // Self-service only (the signed-in user editing their own profile) —
+  // isAuthorized() 403s unless :azureUid is the caller's own.
+  personnelRouter.put('/:azureUid', isAuthorized(), async (req, res) => {
     try {
       const { azureUid } = req.params
       const personnelValues = req.body
@@ -127,9 +128,13 @@ export default (mainRouter: Router) => {
     }
   })
 
-  personnelRouter.put('/id/:id', async (req, res) => {
+  // Leads-only — this edits an arbitrary *teammate's* personnel record (crew
+  // management in both the mobile app's CrewTabPanel and the dashboard's
+  // Configuration Tables page), not a self-edit, so isAuthorized()'s
+  // caller-must-match-:personnelId check would wrongly 403 the real caller.
+  personnelRouter.put('/id/:personnelId', requireLead(), async (req, res) => {
     try {
-      const { id } = req.params
+      const { personnelId: id } = req.params
       const personnelValues = req.body
       const updatedPersonnel = await updatePersonnelById({
         id,
